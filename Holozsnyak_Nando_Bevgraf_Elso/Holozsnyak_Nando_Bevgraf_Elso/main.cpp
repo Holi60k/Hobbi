@@ -477,9 +477,7 @@ int main (int argc, char** argv)
 		if (gameRunning) {
 			draw(); /* Render here */
 			snprintf(windowTitle, sizeof(windowTitle), "Piros: %d - kek: %d", PlayerPoints[0], PlayerPoints[1]);
-			
-		}
-		else {
+		} else {
 			snprintf(windowTitle, sizeof(windowTitle), "Gyoztes jatekos: %s", (winner == 0?"Piros":(winner == 1?"Kek":"Dontetlen")));
 			winnerColor();
 		}

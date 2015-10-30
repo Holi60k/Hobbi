@@ -19,6 +19,8 @@ typedef struct circle {
 	int cS; //circle State - ez mutatja hogy a kör szürke 0 , fehér 1 vagy fekete 2 
 } CIRCLE;
 
+
+
 bool gameRunning = true;
 int winner = 0;
 int circleNum = 15;
@@ -32,11 +34,12 @@ CIRCLE *cArr = new CIRCLE[circleNum];
 CIRCLE *Players = new CIRCLE[2];
 int PlayerPoints[2] = { 0 };
 
-double fRand(double fMin, double fMax)
+double Randomizer(double fMin, double fMax)
 {
 	double f = (double)rand() / RAND_MAX;
 	return fMin + f * (fMax - fMin);
 }
+
 VECTOR2D initVector2D(GLdouble x, GLdouble y) {
 	VECTOR2D P;
 	P.x = x;
@@ -310,6 +313,9 @@ void winnerColor() {
 	else if (winner == 1) {
 		glClearColor(0, 0, 1, 0);
 	}
+	else if (winner == 3) {
+		glClearColor(1, 0, 1, 0);
+	}
 }
 void draw()
 {
@@ -322,6 +328,7 @@ void draw()
 
 		if (circleRemaining == 0) {
 			winner = PlayerPoints[0] > PlayerPoints[1] ? 0 : 1;
+			if (PlayerPoints[0] == PlayerPoints[1]) winner = 3;
 			gameRunning = false;
 		}
 		lastUpdate = now;
@@ -332,80 +339,102 @@ void draw()
 	for (int i = 0; i < circleNum-2; i++) {
 		glColor3f(0.6f, 0.6f, 0.6f);
 		circle(cArr[i]);
-		glColor3f(1.0, 0.4, 0.2);
-		circleVector(cArr[i]);
+		//glColor3f(1.0, 0.4, 0.2);
+		//circleVector(cArr[i]);
 	}
 
 	glColor3f(0, 0, 0);
 	circle(cArr[circleNum - 2]);
 
-	glColor3f(0.0, 0.4, 0.2);
-	circleVector(cArr[circleNum - 2]);
+	//glColor3f(0.0, 0.4, 0.2);
+	//circleVector(cArr[circleNum - 2]);
 
 	glColor3f(1, 1, 1);
 	circle(cArr[circleNum - 1]);
 
-	glColor3f(0.0, 0.4, 0.2);
-	circleVector(cArr[circleNum - 1]);
+	//glColor3f(0.0, 0.4, 0.2);
+	//circleVector(cArr[circleNum - 1]);
 
 	//red - 0
 	glColor3f(1, 0, 0);
 	circle(Players[0]);
 
-	glColor3f(0.0, 0.4, 0.2);
-	circleVector(Players[0]);
+	//glColor3f(0.0, 0.4, 0.2);
+	//circleVector(Players[0]);
 
 	//blue - 1
 	glColor3f(0, 0, 1);
 	circle(Players[1]);
 
-	glColor3f(0.0, 0.4, 0.2);
-	circleVector(Players[1]);
+	//glColor3f(0.0, 0.4, 0.2);
+	//circleVector(Players[1]);
 
 	glFlush ( );
 }
 
+//itt teszteljük a körök x,y koordinátáinak "valódiságá" hogy nem e szerepel már valakinél ez a koordináta úgymond,
+//de valójában a pontok közötti távolságot vizsgáljuk
+bool isItFineXY(GLdouble & x, GLdouble & y, int i) {
+
+	for (int j = 0; j < i; j++) {
+		//cArr[j].x == x || cArr[j].x + circleRadius == x || cArr[j].x - circleRadius == x || cArr[j].y == y || cArr[j].y + circleRadius == y || cArr[j].y - circleRadius == y
+		if (pointDistance(initPoint2D(cArr[j].x, cArr[j].y),initPoint2D(x,y)) <= circleRadius*2) {
+			std::cout << "x,y ujrageneralasa a " << i << " kornel" << std::endl;
+			//std::cout << i << " - " << "X: " << x << " Y:" << y << std::endl;
+			//j = 0;
+			return false;
+		}
+	}
+	return true;
+}
+
 void initCircle(int i, int Code) {
+
 	GLdouble x, y, k, l;
-	
-	if (Code == 0) {
-		x = rand() % (winWidth - circleRadius*2) + circleRadius;
-		y = rand() % (winHeight - circleRadius*2) + circleRadius;
-		k = fRand(-2, 2);
-		l = fRand(-2, 2);
-		cArr[i].r = circleRadius;
-		cArr[i].x = x;
-		cArr[i].y = y;
-		cArr[i].cS = 0;
-		cArr[i].mass = circleMass;
-		cArr[i].M->AddItem(k);
-		cArr[i].M->AddItem(l);
-		std::cout << *cArr[i].M << std::endl;
-	} else if (Code == 1 || Code == 2) { //1 fehér 2 fekete
-		x = rand() % (winWidth - circleRadius * 2) + circleRadius;
-		y = rand() % (winHeight - circleRadius * 2) + circleRadius;
-		k = fRand(-2, 2);
-		l = fRand(-2, 2);
-		cArr[i].r = circleRadius;
-		cArr[i].x = x;
-		cArr[i].y = y;
-		cArr[i].cS = Code;
-		cArr[i].mass = circleMass;
-		cArr[i].M->AddItem(k);
-		cArr[i].M->AddItem(l);
-		std::cout << *cArr[i].M << std::endl;
-	} else if (Code == 3) {
-		x = rand() % (winWidth - circleRadius * 2) + circleRadius;
-		y = rand() % (winHeight - circleRadius * 2) + circleRadius;
-		k = fRand(-2, 2);
-		l = fRand(-2, 2);
-		Players[i].r = circleRadius;
-		Players[i].x = x;
-		Players[i].y = y;
-		Players[i].cS = 2;
-		Players[i].mass = circleMass/2;
-		Players[i].M->AddItem(k);
-		Players[i].M->AddItem(l);
+	x = rand() % (winWidth - circleRadius * 2) + circleRadius;
+	y = rand() % (winHeight - circleRadius * 2) + circleRadius;
+	//std::cout << i << " - " << "X: " << x << " Y:" << y << std::endl;
+
+	if (isItFineXY(x, y, i)) {
+
+		if (Code == 0) {
+			k = Randomizer(2, -2);
+			l = Randomizer(2, -2);
+			cArr[i].r = circleRadius;
+			cArr[i].x = x;
+			cArr[i].y = y;
+			cArr[i].cS = 0;
+			cArr[i].mass = circleMass;
+			cArr[i].M->AddItem(k);
+			cArr[i].M->AddItem(l);
+			//std::cout << *cArr[i].M << std::endl;
+		}
+		else if (Code == 1 || Code == 2) { //1 fehér 2 fekete
+			k = Randomizer(2, -2);
+			l = Randomizer(2, -2);
+			cArr[i].r = circleRadius;
+			cArr[i].x = x;
+			cArr[i].y = y;
+			cArr[i].cS = Code;
+			cArr[i].mass = circleMass;
+			cArr[i].M->AddItem(k);
+			cArr[i].M->AddItem(l);
+			//std::cout << *cArr[i].M << std::endl;
+		}
+		else if (Code == 3) {
+			k = Randomizer(2, -2);
+			l = Randomizer(2, -2);
+			Players[i].r = circleRadius;
+			Players[i].x = x;
+			Players[i].y = y;
+			Players[i].cS = 2;
+			Players[i].mass = circleMass / 2;
+			Players[i].M->AddItem(k);
+			Players[i].M->AddItem(l);
+		}
+	}
+	else {
+		initCircle(i, Code);
 	}
 }
 
@@ -416,10 +445,12 @@ int main (int argc, char** argv)
 	for (int i = 0; i < circleNum-2; i++) {
 		initCircle(i,0);
 	}
-	initCircle(circleNum - 1, 1);
+	
 	initCircle(circleNum - 2, 2);
+	initCircle(circleNum - 1, 1);
 	initCircle(0, 3);
 	initCircle(1, 3);
+	
 	/* Initialize the library */
 	if (!glfwInit())
 		return -1;
@@ -436,17 +467,23 @@ int main (int argc, char** argv)
 	glfwMakeContextCurrent(window);
 
 	init();
+	char windowTitle[50];
 
+	
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
 	{
+		
 		if (gameRunning) {
 			draw(); /* Render here */
+			snprintf(windowTitle, sizeof(windowTitle), "Piros: %d - kek: %d", PlayerPoints[0], PlayerPoints[1]);
+			
 		}
 		else {
+			snprintf(windowTitle, sizeof(windowTitle), "Gyoztes jatekos: %s", (winner == 0?"Piros":(winner == 1?"Kek":"Dontetlen")));
 			winnerColor();
 		}
-
+		glfwSetWindowTitle(window, windowTitle);
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
 

@@ -1,1 +1,19 @@
-﻿  Holozsnyak_Nando_Bevgraf_Elso.vcxproj -> C:\Users\HNK\Source\Repos\HobbiRepo\Holozsnyak_Nando_Bevgraf_Elso\Debug\Holozsnyak_Nando_Bevgraf_Elso.exe
+﻿  main.cpp
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\header.h(806): warning C4522: 'Matrix<T>': multiple assignment operators specified
+          with
+          [
+              T=GLdouble
+          ]
+  c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\header.h(810): note: see reference to class template instantiation 'Matrix<T>' being compiled
+          with
+          [
+              T=GLdouble
+          ]
+  c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(17): note: see reference to class template instantiation 'Vector<GLdouble>' being compiled
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(70): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(81): warning C4244: 'argument': conversion from 'GLdouble' to 'GLfloat', possible loss of data
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(91): warning C4244: 'argument': conversion from 'GLdouble' to 'GLfloat', possible loss of data
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(92): warning C4244: 'argument': conversion from 'GLdouble' to 'GLfloat', possible loss of data
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(97): warning C4244: 'argument': conversion from 'GLdouble' to 'GLfloat', possible loss of data
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(444): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+  Holozsnyak_Nando_Bevgraf_Elso.vcxproj -> C:\Users\HNK\Source\Repos\HobbiRepo\Holozsnyak_Nando_Bevgraf_Elso\Debug\Holozsnyak_Nando_Bevgraf_Elso.exe

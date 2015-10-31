@@ -27,7 +27,7 @@ int winner = 0;
 int circleNum = 15;
 int circleRemaining = circleNum-1;
 int circleRadius = 15;
-int circleMass = 6;
+GLdouble circleMass = 1;
 GLsizei winWidth = 800, winHeight = 600;
 
 GLdouble updateFrequency = 0.01, lastUpdate;
@@ -212,8 +212,7 @@ void MovePlayers() {
 
 				}
 
-				Players[id].x += Players[id].M->GetValue(0);
-				Players[id].y += Players[id].M->GetValue(1);
+			
 				/*if (Players[id].x + Players[id].r > 800 || Players[id].x - Players[id].r < 0)
 				{
 					*Players[id].M = *Players[id].M * (-1);
@@ -225,6 +224,8 @@ void MovePlayers() {
 					Mirror2Y(Players[id].M);
 				}*/
 			}
+			Players[id].x += Players[id].M->GetValue(0);
+			Players[id].y += Players[id].M->GetValue(1);
 				
 	}
 

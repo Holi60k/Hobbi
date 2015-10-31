@@ -932,7 +932,21 @@ public:
 		GLdouble temp = innerMultiply(b) / (b.Distance() * b.Distance());
 		Vector<T> res(2);
 		res = res * temp;
-
+		return res;
+	}
+	double PROJ(Vector b) {
+		b.Normalization();
+		return innerMultiply(*this, b);
+	}
+	Vector projectTo2(Vector b, GLdouble & x, GLdouble & y, GLdouble & r)
+	{
+		GLdouble temp = innerMultiply(b) / (b.Distance() * b.Distance());
+		Vector<GLdouble> res(2),re(2);
+		res = *this * temp;
+		re = res;
+		re.Normalization();
+		x = x + r*re.GetValue(0);
+		y = y + r*re.GetValue(1);
 		return res;
 	}
 

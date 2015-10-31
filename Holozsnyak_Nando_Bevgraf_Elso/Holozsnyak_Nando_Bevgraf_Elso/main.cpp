@@ -2,7 +2,8 @@
 #include "Header.h"
 #include <math.h>
 #include <time.h> 
-
+#include <thread>       
+#include <chrono> 
 #define PI 3.141592653589793
 
 typedef struct vector2d { GLdouble x, y; } VECTOR2D;
@@ -25,14 +26,44 @@ bool gameRunning = true;
 int winner = 0;
 int circleNum = 15;
 int circleRemaining = circleNum-1;
-int circleRadius = 16;
-int circleMass = 100;
+int circleRadius = 15;
+int circleMass = 6;
 GLsizei winWidth = 800, winHeight = 600;
 
 GLdouble updateFrequency = 0.01, lastUpdate;
 CIRCLE *cArr = new CIRCLE[circleNum];
 CIRCLE *Players = new CIRCLE[2];
 int PlayerPoints[2] = { 0 };
+
+//A1 = (winWidth,winHeight/2);
+//A2 = (0,winHeight/2);
+//B1 = (winWidth/2,0);
+//B1 = (winWidth/2,winHeight);
+
+//e = (a,b,c) = (a2 ? b2, b1 ? a1, a1b2 ? b1a2)
+
+
+Vector<GLdouble> e1(2), e2(2), e3(2), e4(2);
+
+typedef struct line {
+	int x1, x2, y1, y2;
+	//Vector<GLdouble> *N;
+}LINE2D;
+LINE2D lines[4];
+LINE2D newLine(int x1, int y1, int x2, int y2) {
+	LINE2D line;
+	line.x1 = x1;
+	line.y1 = y1;
+	line.x2 = x2;
+	line.y2 = y2;
+	return line;
+}
+
+double lineDistance(Vector<GLdouble> normal, POINT2D P) {
+	Vector <GLdouble> V(2);
+	return std::abs((normal.GetValue(0)*P.x + normal.GetValue(1)*P.y)) / (normal.Distance());
+
+}
 
 double Randomizer(double fMin, double fMax)
 {
@@ -61,12 +92,15 @@ CIRCLE2D initCircle2D(GLdouble x, GLdouble y, GLdouble r) {
 	P.r = r;
 	return P;
 }
+
 bool checkCircleSpawn() {
 	bool spawnedTogether = false;
 	return spawnedTogether;
 }
+
 void init()
 {
+	
     glClearColor (0.3, 0.3, 0.3, 0.0);	
 
     glMatrixMode (GL_PROJECTION);	
@@ -111,19 +145,44 @@ void Mirror2Y(Vector<GLdouble> *T) {
 	normal << 0 << 1;
 	*T = T->Mirror(normal);
 }
-
+double pointDistance(POINT2D p1, POINT2D p2) {
+	double sum = 0;
+	sum += (p2.x - p1.x)*(p2.x - p1.x);
+	sum += (p2.y - p1.y)*(p2.y - p1.y);
+	return (double)std::sqrt(sum);
+}
 void MoveBalls() {
-	
 	for (int id = 0; id < circleNum; id++) {
-		if (cArr[id].x + cArr[id].r + cArr[id].M->GetValue(0) > winWidth || cArr[id].x - cArr[id].r + cArr[id].M->GetValue(0) < 0)
+		
+		/*if (cArr[id].x + cArr[id].r + cArr[id].M->GetValue(0) > winWidth || cArr[id].x - cArr[id].r + cArr[id].M->GetValue(0) < 0)
 		{
 			*cArr[id].M = *cArr[id].M * (-1);
 			Mirror2X(cArr[id].M);
 		}
-		else if (cArr[id].y + cArr[id].r + cArr[id].M->GetValue(1) > winHeight || cArr[id].y - cArr[id].r + cArr[id].M->GetValue(1) < 0)
+		else if (cArr[id].y + cArr[id].r + cArr[id].M->GetValue(1) > winHeight || cArr[id].y - cArr[id].r + cArr[id].M->GetValue(1) < 0) 
 		{
 			*cArr[id].M = *cArr[id].M * (-1);
-			Mirror2Y(cArr[id].M);			
+			Mirror2Y(cArr[id].M);
+		}*/
+
+		double A;
+		for (int i = 0; i < 4; i++) {
+			
+			Vector<GLdouble> Vector2D(2),vonal(2),vonal90(2);
+			Vector2D << (cArr[id].x+cArr[id].M->GetValue(0)) - lines[i].x1 << (cArr[id].y+ cArr[id].M->GetValue(1)) - lines[i].y1;
+			vonal << lines[i].x2 - lines[i].x1 << lines[i].y2 - lines[i].y1;
+			vonal90 << vonal.GetValue(1) << vonal.GetValue(0)*-1;
+			double L = Vector2D.PROJ(vonal90);
+			if (abs(L) <= cArr[id].r && (i%2) == 1 ) {
+				*cArr[id].M = *cArr[id].M * (-1);
+				Mirror2X(cArr[id].M);
+
+			}
+			else 	if (abs(L) <= cArr[id].r && (i % 2) == 0) {
+				*cArr[id].M = *cArr[id].M * (-1);
+				Mirror2Y(cArr[id].M);
+
+			}
 		}
 
 		cArr[id].x += cArr[id].M->GetValue(0);
@@ -135,30 +194,44 @@ void MoveBalls() {
 void MovePlayers() {
 	
 	for (int id = 0; id < 2; id++) {
-		Players[id].x += Players[id].M->GetValue(0);
-		Players[id].y += Players[id].M->GetValue(1);
-		if (Players[id].x + Players[id].r > 800 || Players[id].x - Players[id].r < 0)
-		{
-			*Players[id].M = *Players[id].M * (-1);
-			Mirror2X(Players[id].M);
-		}
-		if (Players[id].y + Players[id].r > 600 || Players[id].y - Players[id].r < 0)
-		{
-			*Players[id].M = *Players[id].M * (-1);
-			Mirror2Y(Players[id].M);
-		}
+			double A;
+			for (int i = 0; i < 4; i++) {
+
+				Vector<GLdouble> Vector2D(2), vonal(2), vonal90(2);
+				Vector2D << (Players[id].x + Players[id].M->GetValue(0)) - lines[i].x1 << (Players[id].y + Players[id].M->GetValue(1)) - lines[i].y1;
+				vonal << lines[i].x2 - lines[i].x1 << lines[i].y2 - lines[i].y1;
+				vonal90 << vonal.GetValue(1) << vonal.GetValue(0)*-1;
+				double L = Vector2D.PROJ(vonal90);
+				if (abs(L) <= Players[id].r && (i % 2) == 1) {
+					*Players[id].M = *Players[id].M * (-1);
+					Mirror2X(Players[id].M);
+
+				} else 	if (abs(L) <= Players[id].r && (i % 2) == 0) {
+					*Players[id].M = *Players[id].M * (-1);
+					Mirror2Y(Players[id].M);
+
+				}
+
+				Players[id].x += Players[id].M->GetValue(0);
+				Players[id].y += Players[id].M->GetValue(1);
+				/*if (Players[id].x + Players[id].r > 800 || Players[id].x - Players[id].r < 0)
+				{
+					*Players[id].M = *Players[id].M * (-1);
+					Mirror2X(Players[id].M);
+				}
+				if (Players[id].y + Players[id].r > 600 || Players[id].y - Players[id].r < 0)
+				{
+					*Players[id].M = *Players[id].M * (-1);
+					Mirror2Y(Players[id].M);
+				}*/
+			}
 				
 	}
 
 
 }
 
-double pointDistance(POINT2D p1, POINT2D p2) {
-	double sum = 0;
-	sum += (p2.x - p1.x)*(p2.x - p1.x);
-	sum += (p2.y - p1.y)*(p2.y - p1.y);
-	return (double) std::sqrt(sum);
-}
+
 
 void collidee(CIRCLE & a, CIRCLE & b) {
 
@@ -248,9 +321,10 @@ void PlayerCollideWithCircle(int id) {
 			cArr[i].x = -100;
 			cArr[i].y = -100;
 			cArr[i].M->Reset();
+			std::cout << "fekete golyó kilõve" << std::endl;
 			winner = id == 1 ? 0 : 1;
 			gameRunning = false;
-			std::cout << "fekete golyó kilõve" << std::endl;
+			
 			
 		}
 
@@ -314,7 +388,13 @@ void winnerColor() {
 		glClearColor(0, 0, 1, 0);
 	}
 	else if (winner == 3) {
-		glClearColor(1, 0, 1, 0);
+		
+		if (time(NULL) % 2) {
+			glClearColor(1, 0, 0, 0);
+		}
+		else {
+			glClearColor(0, 0, 1, 0);
+		}
 	}
 }
 void draw()
@@ -438,9 +518,45 @@ void initCircle(int i, int Code) {
 	}
 }
 
+//A1 = (winWidth,winHeight/2);
+//A2 = (0,winHeight/2);
+//B1 = (winWidth/2,0);
+//B1 = (winWidth/2,winHeight);
+//a = (a1,a2) 
+//b = (b1,b2)
+//e = (a,b,c) = (a2 ? b2, b1 ? a1, a1b2 ? b1a2)
+
 
 int main (int argc, char** argv)
 {
+	
+	LINE2D line1, line2, line3, line4;
+
+	line1.x1 = 0;
+	line1.y1 = 0;
+	line1.x2 = winWidth;
+	line1.y2 = 0;
+
+	line2.x1 = winWidth;
+	line2.y1 = 0;
+	line2.x2 = winWidth;
+	line2.y2 = winHeight;
+
+	line3.x1 = winWidth;
+	line3.y1 = winHeight;
+	line3.x2 = 0;
+	line3.y2 = winHeight;
+
+	line4.x1 = 0;
+	line4.y1 = winHeight;
+	line4.x2 = 0;
+	line4.y2 = 0;
+
+	lines[0] = line1;
+	lines[1] = line2;
+	lines[2] = line3;
+	lines[3] = line4;
+
 	srand(time(NULL));
 	for (int i = 0; i < circleNum-2; i++) {
 		initCircle(i,0);

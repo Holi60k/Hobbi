@@ -950,6 +950,18 @@ public:
 		return res;
 	}
 
+	Vector rotateBy90(int i) {
+		T x, y;
+		Vector<T> res = *this;
+		if (i == 1) {
+			x = this->GetValue(0);
+			y = (-1)*this->GetValue(1);
+			res << y << x;
+		}
+		
+		return res;
+	}
+
 
 private:
 

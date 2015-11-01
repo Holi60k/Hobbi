@@ -132,18 +132,28 @@ void circleVector(CIRCLE O) {
 	glEnd();
 }
 
-void Mirror2X(Vector<GLdouble> *T) {
+void Mirror2X(Vector<GLdouble> *T, Vector<GLdouble> *norm) {
 	Vector<double> normal(2);
 	normal.Reset();
 	normal << 1 << 0;
-	*T = T->Mirror(normal);
+	if (norm != NULL) {
+		*T = T->Mirror(*norm);
+	}
+	else {
+		*T = T->Mirror(normal);
+	}
 }
 
-void Mirror2Y(Vector<GLdouble> *T) {
+void Mirror2Y(Vector<GLdouble> *T, Vector<GLdouble> *norm) {
 	Vector<double> normal(2);
 	normal.Reset();
 	normal << 0 << 1;
-	*T = T->Mirror(normal);
+	if (norm != NULL) {
+		*T = T->Mirror(*norm);
+	}
+	else {
+		*T = T->Mirror(normal);
+	}
 }
 double pointDistance(POINT2D p1, POINT2D p2) {
 	double sum = 0;
@@ -152,35 +162,35 @@ double pointDistance(POINT2D p1, POINT2D p2) {
 	return (double)std::sqrt(sum);
 }
 void MoveBalls() {
+
 	for (int id = 0; id < circleNum; id++) {
-		
-		/*if (cArr[id].x + cArr[id].r + cArr[id].M->GetValue(0) > winWidth || cArr[id].x - cArr[id].r + cArr[id].M->GetValue(0) < 0)
-		{
-			*cArr[id].M = *cArr[id].M * (-1);
-			Mirror2X(cArr[id].M);
-		}
-		else if (cArr[id].y + cArr[id].r + cArr[id].M->GetValue(1) > winHeight || cArr[id].y - cArr[id].r + cArr[id].M->GetValue(1) < 0) 
-		{
-			*cArr[id].M = *cArr[id].M * (-1);
-			Mirror2Y(cArr[id].M);
-		}*/
+		//e = (a,b,c) = (a2 ? b2 b1 ? a1 a1b2 ? b1a2)
+		//ezek majd a 4 vonalból jönnek.
 
 		double A;
+		float d;
 		for (int i = 0; i < 4; i++) {
 			
-			Vector<GLdouble> Vector2D(2),vonal(2),vonal90(2);
-			Vector2D << (cArr[id].x+cArr[id].M->GetValue(0)) - lines[i].x1 << (cArr[id].y+ cArr[id].M->GetValue(1)) - lines[i].y1;
-			vonal << lines[i].x2 - lines[i].x1 << lines[i].y2 - lines[i].y1;
-			vonal90 << vonal.GetValue(1) << vonal.GetValue(0)*-1;
-			double L = Vector2D.PROJ(vonal90);
-			if (abs(L) <= cArr[id].r && (i%2) == 1 ) {
+			//Vector<GLdouble> Vector2D(2), vonal(2), vonal90(2);
+			//Vector2D << (cArr[id].x+cArr[id].M->GetValue(0)) - lines[i].x1 << (cArr[id].y+ cArr[id].M->GetValue(1)) - lines[i].y1;
+			//vonal << lines[i].x2 - lines[i].x1 << lines[i].y2 - lines[i].y1;
+			//vonal90 << vonal.GetValue(1) << vonal.GetValue(0)*-1;
+			//double L = Vector2D.PROJ(vonal90);
+
+			//egyenes paraméteres egyenlete igazából ez lesz itt :)
+			Vector<GLdouble>egyenes(3), normal(2);
+			egyenes << lines[i].y1 - lines[i].y2 << lines[i].x2 - lines[i].x1 << lines[i].x1*lines[i].y2 - lines[i].x2 * lines[i].y1;
+			normal << egyenes.GetValue(0) << egyenes.GetValue(1);
+			d = std::abs(egyenes.GetValue(0)*cArr[id].x + egyenes.GetValue(1)*cArr[id].y + egyenes.GetValue(2))/normal.Distance();
+
+			if (abs(d) <= cArr[id].r && (i%2) == 1 ) {
 				*cArr[id].M = *cArr[id].M * (-1);
-				Mirror2X(cArr[id].M);
+				Mirror2X(cArr[id].M, &normal);
 
 			}
-			else 	if (abs(L) <= cArr[id].r && (i % 2) == 0) {
+			else 	if (abs(d) <= cArr[id].r && (i % 2) == 0) {
 				*cArr[id].M = *cArr[id].M * (-1);
-				Mirror2Y(cArr[id].M);
+				Mirror2Y(cArr[id].M, &normal);
 
 			}
 		}
@@ -194,21 +204,29 @@ void MoveBalls() {
 void MovePlayers() {
 	
 	for (int id = 0; id < 2; id++) {
-			double A;
+		//double A;
+		double d;
 			for (int i = 0; i < 4; i++) {
 
-				Vector<GLdouble> Vector2D(2), vonal(2), vonal90(2);
-				Vector2D << (Players[id].x + Players[id].M->GetValue(0)) - lines[i].x1 << (Players[id].y + Players[id].M->GetValue(1)) - lines[i].y1;
-				vonal << lines[i].x2 - lines[i].x1 << lines[i].y2 - lines[i].y1;
-				vonal90 << vonal.GetValue(1) << vonal.GetValue(0)*-1;
-				double L = Vector2D.PROJ(vonal90);
-				if (abs(L) <= Players[id].r && (i % 2) == 1) {
-					*Players[id].M = *Players[id].M * (-1);
-					Mirror2X(Players[id].M);
+				//Vector<GLdouble> Vector2D(2), vonal(2), vonal90(2);
+				//Vector2D << (Players[id].x+Players[id].M->GetValue(0)) - lines[i].x1 << (Players[id].y+ Players[id].M->GetValue(1)) - lines[i].y1;
+				//vonal << lines[i].x2 - lines[i].x1 << lines[i].y2 - lines[i].y1;
+				//vonal90 << vonal.GetValue(1) << vonal.GetValue(0)*-1;
+				//double L = Vector2D.PROJ(vonal90);
 
-				} else 	if (abs(L) <= Players[id].r && (i % 2) == 0) {
+				//egyenes paraméteres egyenlete igazából ez lesz itt :)
+				Vector<GLdouble>egyenes(3), normal(2);
+				egyenes << lines[i].y1 - lines[i].y2 << lines[i].x2 - lines[i].x1 << lines[i].x1*lines[i].y2 - lines[i].x2 * lines[i].y1;
+				normal << egyenes.GetValue(0) << egyenes.GetValue(1);
+				d = std::abs(egyenes.GetValue(0)*Players[id].x + egyenes.GetValue(1)*Players[id].y + egyenes.GetValue(2)) / normal.Distance();
+
+				if (abs(d) <= Players[id].r && (i % 2) == 1) {
 					*Players[id].M = *Players[id].M * (-1);
-					Mirror2Y(Players[id].M);
+					Mirror2X(Players[id].M, &normal);
+
+				} else if (abs(d) <= Players[id].r && (i % 2) == 0) {
+					*Players[id].M = *Players[id].M * (-1);
+					Mirror2Y(Players[id].M, &normal);
 
 				}
 
@@ -367,17 +385,25 @@ void checkCollide() {
 
 
 void simpleKeyCheck(GLFWwindow * window, int key, int scancode, int action, int mods) {
+	Vector<GLdouble> egyenes(3), normal(2);
+	Vector<GLdouble> norm(2);
 	if (key == GLFW_KEY_A && action == GLFW_PRESS) {
-		Mirror2X(Players[0].M);
+		//egyenes << lines[i].y1 - lines[i].y2 << lines[i].x2 - lines[i].x1 << lines[i].x1*lines[i].y2 - lines[i].x2 * lines[i].y1;
+		//normal << egyenes.GetValue(0) << egyenes.GetValue(1);
+		//norm = Players[0].M->rotateBy90(1);
+		Mirror2X(Players[0].M, NULL);
 	}
 	if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-		Mirror2Y(Players[0].M);
+		//norm = Players[0].M->rotateBy90(0);
+		Mirror2Y(Players[0].M, NULL);
 	}
 	if (key == GLFW_KEY_K && action == GLFW_PRESS) {
-		Mirror2X(Players[1].M);
+		//norm = Players[1].M->rotateBy90(1);
+		Mirror2X(Players[1].M, NULL);
 	}
 	if (key == GLFW_KEY_L && action == GLFW_PRESS) {
-		Mirror2Y(Players[1].M);
+		//norm = Players[1].M->rotateBy90(0);
+		Mirror2Y(Players[1].M, NULL);
 	}
 }
 void winnerColor() {

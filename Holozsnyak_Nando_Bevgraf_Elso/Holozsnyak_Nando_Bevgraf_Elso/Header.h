@@ -934,6 +934,7 @@ public:
 		res = res * temp;
 		return res;
 	}
+
 	double PROJ(Vector b) {
 		b.Normalization();
 		return innerMultiply(*this, b);

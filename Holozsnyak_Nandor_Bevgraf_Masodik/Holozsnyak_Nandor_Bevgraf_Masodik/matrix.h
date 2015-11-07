@@ -184,26 +184,27 @@ class Matrix {
 
 	Matrix operator* (const Matrix & A) {
 		T Var = 0;
-		if(this->GetY() == A.GetX()) {
-			
-			Matrix<T> Result(this->GetX(),A.GetY());
-			for(int i = 0; i < Result.GetY();i++) {
-				for(int j = 0; j < Result.GetX(); j++) {				
-					
-					for(int l = 0; l < this->GetY();l++ ) {
-						Var += this->GetValue(j,l) * A.GetValue(l,i);
-					}			
-					Result.FillMatrix(Var,j,i);
+		if (this->GetY() == A.GetX()) {
+
+			Matrix<T> Result(this->GetX(), A.GetY());
+			for (int i = 0; i < Result.GetY();i++) {
+				for (int j = 0; j < Result.GetX(); j++) {
+
+					for (int l = 0; l < this->GetY();l++) {
+						Var += this->GetValue(j, l) * A.GetValue(l, i);
+					}
+					Result.FillMatrix(Var, j, i);
 					Var = 0;
-					
+
 				}
 
 			}
 
 			return Result;
-		} else {
-			std::cout << "Sorry I can not multiplicate these two Matrixes..."<< std::endl;
-			
+		}
+		else {
+			std::cout << "Sorry I can not multiplicate these two Matrixes..." << std::endl;
+
 		}
 		return 0;
 	}
@@ -748,27 +749,36 @@ class Matrix {
 		Matrix<T> ID(siX,siY);
 		Matrix<T> O = *this;
 		ID.Make_Identity();
-
-		float pivot;
 		
-		for(int i = 0; i < siX; i++) {
-			O.ChangeRows(0,i);
+		T pivot;
+		int csI = 0;
+		
+		for(int i = 0; i < this->GetX(); i++) {
+
+			//for (int j = i; j < this->GetY(); j++) {
+			//	csI = Abs_Max(j);
+				ChangeRows(i, csI);
+				ID.ChangeRows(i, csI);
+			//}
+
+			ChangeRows(0,i);
 			ID.ChangeRows(0,i);
-			pivot = O.GetValue(0,i)!= 0?1/O.GetValue(0,i):1;
+			pivot = GetValue(0,i)!= 0?1/GetValue(0,i):1;
+			//pivot = 1 / O.GetValue(0, i);
 			
-			O.MultiplicateRow(0,pivot);
+			MultiplicateRow(0,pivot);
 
 			ID.MultiplicateRow(0,pivot);
 
 			for(int j = 1; j < siX; j++) {
 				
-				pivot = (-1)* O.GetValue(j,i);
+				pivot = (-1)* GetValue(j,i);
 				
 				ID.AddRow2Row(j,0,pivot);
-				O.AddRow2Row(j,0,pivot);
+				AddRow2Row(j,0,pivot);
 			}
 
-			O.ChangeRows(0,i);
+			ChangeRows(0,i);
 			ID.ChangeRows(0,i);
 
 			

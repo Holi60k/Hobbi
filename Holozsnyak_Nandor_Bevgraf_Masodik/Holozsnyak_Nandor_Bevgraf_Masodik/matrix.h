@@ -12,6 +12,7 @@ class Matrix {
  public:
 	// Konstuktor
 	Matrix(int a = 0, int b = 0):siX(a), siY(b) {
+		
 		//std::cout << "Matrix ctor" << std::endl;
 		// inicializálás itt történik, memóriában foglalunk helyet ennek a sok szép számnak
 		// beállítjuk a mutatónkat hogy mutasson egy mutatóra... igen ez most így lesz
@@ -27,7 +28,7 @@ class Matrix {
 		} else {
 			Squared = false;
 		}
-
+		
 		// determináns előjele
 		Det_Sign = 1;
 	}
@@ -37,14 +38,27 @@ class Matrix {
 		// logikus hogy előbb azokat az adatokat töröljük amiket legutoljára raktunk a memóriába
 		// pointer to pointer, A to B... B(k) törlése előbb a memóriából aztán pedig az A-t
 		for (int i = 0; i < this->GetX(); i++) {
-			delete [] Matx[i];
+			try
+			{
+				if(Matx[i] != NULL)
+					delete[] Matx[i];
+			}
+			catch (const std::exception&e)
+			{
+				std::cout << e.what() << std::endl;
+			}
+			
 
 		}
+		if(Matx != NULL)
 		delete [] Matx;
 
 	}
+	void Destroy() {
+		this->~Matrix();
+	}
 	// mozgató szemantika
-	Matrix (Matrix<T> && A) {
+	/*Matrix (Matrix<T> && A) {
 
 		//std::cout << "move ctor" << std::endl;
 		Matx = new T*[A.GetX()];
@@ -57,9 +71,9 @@ class Matrix {
 		siY = A.GetY();
 		Squared = A.GetSquared();
 		Det_Sign = A.Get_Det_Sign();
-	}
+	}*/
 	// mozgató értékadá
-	Matrix & operator= (Matrix<T> && A) {
+	/*Matrix & operator= (Matrix<T> && A) {
 
 		//std::cout << "move assingment" << std::endl;
 		siX = A.GetX();
@@ -67,7 +81,7 @@ class Matrix {
 		Squared = A.GetSquared();
 		Det_Sign = A.Get_Det_Sign();
 		// egy előre lefoglalt kibaszott 0 terület törlése :'(
-		delete [] Matx;
+//		delete [] Matx;
 
 
 		Matx = new T*[siX];
@@ -78,7 +92,7 @@ class Matrix {
 		}
 		return *this;
 
-	}
+	}*/
 
 	// értékadó operátorunk, másoló értékadás!
 	Matrix & operator= (Matrix & A) {
@@ -112,7 +126,7 @@ class Matrix {
 		siX = A.siX;
 		siY = A.siY;
 		// egy előre lefoglalt kibaszott 0 terület törlése :'(
-		delete [] Matx;
+		//delete [] Matx;
 
 
 		Matx = new T*[siX];
@@ -172,9 +186,7 @@ class Matrix {
 				}
 
 			}
-
 			return Result;
-
 		} else {
 			std::cout << "Sorry I can not add these two Matrixes..."<< std::endl;
 
@@ -185,8 +197,8 @@ class Matrix {
 	Matrix operator* (const Matrix & A) {
 		T Var = 0;
 		if (this->GetY() == A.GetX()) {
-
 			Matrix<T> Result(this->GetX(), A.GetY());
+
 			for (int i = 0; i < Result.GetY();i++) {
 				for (int j = 0; j < Result.GetX(); j++) {
 
@@ -199,7 +211,6 @@ class Matrix {
 				}
 
 			}
-
 			return Result;
 		}
 		else {
@@ -220,7 +231,16 @@ class Matrix {
 
 		return *this;
 	}
+	void ResetToNull() {
+		
+		for (int i = 0; i < siX; i++) {
+			// aztán pedig egyesével lefoglalunk a mutatók számára dinamikus memóriát
+			Matx[i] = new T[1];
+			Matx[i] = NULL;
+		}
+		Matx = NULL;
 
+	}
 	bool GetSquared() const {
 		return Squared;
 	}
@@ -745,11 +765,13 @@ class Matrix {
 		}
 	}
 
+	
+
 	Matrix Inverz_Matrix() {
-		Matrix<T> ID(siX,siY);
-		Matrix<T> O = *this;
+		Matrix<T> ID(siX, siY);
+
+		//O = *this;
 		ID.Make_Identity();
-		
 		T pivot;
 		int csI = 0;
 		

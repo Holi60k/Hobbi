@@ -64,50 +64,13 @@ void init()
 int numControls = 5, numControls2;                   /* control pontok számai */
 double controls[MAX_DEGREE + 1][2];
 double controls2[MAX_DEGREE + 1][3];
-
+int keyPressed = -1;
 
 GLdouble param = 0.5;
-#define NUM_CONTROLS 7
+#define NUM_CONTROLS 7+1
 GLdouble controlPoints[NUM_CONTROLS][2];
 int givenPoints = 0;
-
-void allBernstein(int n, double u, double B[]) {
-	int j, k;
-	double u1 = 1.0 - u;
-	double saved;
-	B[0] = 1.0;
-	for (j = 1; j <= n; j++) {
-		saved = 0.0;
-		for (k = 0; k < j; k++) {
-			double temp = B[k];
-			B[k] = saved + u1*temp;
-			saved = u*temp;
-		}
-		B[j] = saved;
-	}
-}
-
-void pointOnBezierCurve(double P[][2], int n, double u, double C[2]) {
-	double B[20];
-	int k;
-	allBernstein(n, u, B);
-	C[0] = C[1] = 0.0;
-	for (k = 0; k <= n; k++) {
-		C[0] += B[k] * P[k][0];
-		C[1] += B[k] * P[k][1];
-		//C[2] += B[k] * P[k][2];
-	}
-}
-double*  findfixpoint(double P[][3], int n, int m) {
-	int i, j;
-	double retpoint[1][3];
-	retpoint[0][0] = (P[n - 1][0] - P[n - 2][0]) + P[n - 1][0];
-	retpoint[0][1] = (P[n - 1][1] - P[n - 2][1]) + P[n - 1][1];
-	retpoint[0][2] = 0;
-
-	return retpoint[0];
-
-}
+bool manualErinto = false;
 
 void Casteljau(int n, double P[][2], double t) {
 	double tomb[7][2];
@@ -130,14 +93,11 @@ void Casteljau(int n, double P[][2], double t) {
 	}
 	glVertex2dv(tomb[0]);
 	glEnd();
-	//glBegin(GL_POINTS);
-	//glVertex3dv(tomb[0]);
-	//glEnd();
 }
 
 void drawLineBetweenControlPoints() {
 	glBegin(GL_LINES);
-	for (int i = 0; i < givenPoints - 1; i++) {
+	for (int i = 0; i < givenPoints -2 ; i++) {
 		glColor3f(1.0, 0.0, 1.0);
 		glVertex2f(controlPoints[i][0], controlPoints[i][1]);
 		glVertex2f(controlPoints[i + 1][0], controlPoints[i + 1][1]);
@@ -148,7 +108,7 @@ void drawLineBetweenControlPoints() {
 
 void HermiteIv() {
 	int t1 = 0, t2 = 1, t3 = 2;
-	Matrix<float> T(4, 4),O(4,4),G(4,4);
+	Matrix<float>O(4,4),G(2,4);
 	Matrix<float> M(4,4);
 	double _4th;
 	for (int i = 3; i >=0;i--) {
@@ -161,56 +121,112 @@ void HermiteIv() {
 		
 		O << pow(t1, i) << pow(t2, i) << pow(t3, i) <<_4th;
 	}
-	T = O;
+	//T = O;
 	M = O.Inverz_Matrix();
-	M = M*O;
+	//M = M*T;
+	givenPoints = 8;
+	
+	if (manualErinto == false) {
+		controlPoints[7][0] = (controlPoints[4][0] + 2 * (controlPoints[4][0] - controlPoints[3][0]));
+		controlPoints[7][1] = (controlPoints[4][1] + 2 * (controlPoints[4][1] - controlPoints[3][1]));
+	}
+	G << controlPoints[4][0] << controlPoints[5][0] << controlPoints[6][0] << controlPoints[7][0];
+	G << controlPoints[4][1] << controlPoints[5][1] << controlPoints[6][1] << controlPoints[7][1];
+	
+	glPointSize(8.0);
+	glBegin(GL_POINTS);
+	glColor3f(1.0, 0.0, 0.0);
+	glVertex2d(controlPoints[7][0], controlPoints[7][1]); //display a point
+	glEnd();
 
+	glBegin(GL_LINES);
+	glColor3f(1.0, 0.0, 0.0);
+	glVertex2d(controlPoints[4][0], controlPoints[4][1]);
+	glVertex2d(controlPoints[7][0], controlPoints[7][1]); //display a point
+	glEnd();
+	Matrix<float> C = G*M,Z(C.GetY(),T.GetX());
+	Matrix<float> T(4, 1);
+	//std::cout << "C:" << C;
+	glColor3f(0.0, 0.0, 1.0);
+	glPointSize(3.0);
+	glBegin(GL_POINTS);
+	float x, y;
 
-	std::cout << M;
+	for (float i = t1; i <= t2; i += 0.001)
+	{
+		
+		T << 3*i*i;
+		T << 2*i;
+		T << 1;
+		T << 0;
+		Z = C*T;
+		x = Z.GetValue(0, 0);
+		y = Z.GetValue(1, 0);
+		if (x == controlPoints[4][0] && y == controlPoints[4][1]) {
+			
+			//std::cout << Z;
+			glVertex2f(x, y);
+		}
+	}
+
+	for (float i = t2; i <= t3; i += 0.001)
+	{
+
+		T << i*i*i;
+		T << i*i;
+		T << i;
+		T << 1;
+		Z = C*T;
+		x = Z.GetValue(0, 0);
+		y = Z.GetValue(1, 0);
+		//std::cout << Z;
+		glVertex2f(x, y);
+	}
+	glEnd();
+	
+	
+	///std::cout << fin;
+}
+void turnActualPoint(int actual) {
+	double alpha = -3.14159265 / (10 * 360);
+	Matrix<double> m(3, 1);
+	for (int i = 0; i < givenPoints; i++) {
+		if (i != actual) {
+			m << controlPoints[i][0] - controlPoints[actual][0] << controlPoints[i][1] - controlPoints[actual][1] << 1;
+			m.RotateX(alpha);
+			controlPoints[i][0] = m.GetValue(0, 0) + controlPoints[actual][0];
+			controlPoints[i][1] = m.GetValue(1, 0) + controlPoints[actual][1];
+		}
+	}
 }
 
 void draw()
 {
     glClear (GL_COLOR_BUFFER_BIT);
-	//glColor3f (0.0f, 0.4f, 0.2f);
-	//controls[0][1] = 10;
-	//controls[0][2] = 15;
-	//controls[0][3] = 10.0;
-	//controls[1][1] = 30;
-	//controls[1][2] = 70;
-	//controls[1][3] = 34.0;
-	//controls[2][1] = 120;
-	//controls[2][2] = 150;
-	//controls[2][3] = 76.0;
-	//controls[3][1] = 200;
-	//controls[3][2] = 180;
-	//controls[3][3] = 145.0;
-	//controls[4][1] = 450;
-	//controls[4][2] = 600;
-	//controls[4][3] = 600.0;
-	//glBegin(GL_LINE_STRIP);
-	/*int i, u;
-	for (i = 0, u = 0.0; i < SAMPLES; i++, u += DU) {
-		double C[2];
-		pointOnBezierCurve(controlPoints, givenPoints - 1, u, C);
-		//glVertex3dv(C);
-	}*/
-	//glEnd();
+	
+	if (givenPoints == 7 || givenPoints == 8) {
 	for (double j = 0; j <= 1; j += 0.001) {
-		Casteljau(givenPoints <6?givenPoints:5, controlPoints, j);
+			Casteljau(givenPoints <6 ? givenPoints : 5, controlPoints, j);
 	}
+	
+	HermiteIv();
+	
+	drawLineBetweenControlPoints();
+		if (keyPressed != -1) {
+			turnActualPoint(keyPressed);
+		}
+	}
+
 	glPointSize(8.0);
-	
 	glBegin(GL_POINTS);
-	
 	for (int i = 0; i < givenPoints; i++) {
 		glColor3f(1.0, 0.0, 0.0);
 		glVertex2d(controlPoints[i][0], controlPoints[i][1]); //display a point
-															//glVertex2i((it++)->GetValue(0, 0), (it++)->GetValue(1, 0)); //display a poin
+															  //glVertex2i((it++)->GetValue(0, 0), (it++)->GetValue(1, 0)); //display a poin
 	}
-	HermiteIv();
 	glEnd();
-	drawLineBetweenControlPoints();
+
+	
 	glFlush ( );
 }
 double xpos, ypos;
@@ -247,12 +263,24 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 {
 	if (movePoint) {
 		if (selectedPointIndex != -1) {
-			controlPoints[selectedPointIndex][0] = xpos - winWidth * 0.5f; //set the selected point new coordinates
-			controlPoints[selectedPointIndex][1] = ypos - winHeight * 0.5f;
 			
+			
+			if (selectedPointIndex == 7) {
+				manualErinto = true;
+				//controlPoints[3][0] = controlPoints[7][0] - controlPoints[5][0];
+				//controlPoints[3][1] = controlPoints[5][1] -controlPoints[7][1];
+				controlPoints[selectedPointIndex][0] = xpos - winWidth * 0.5f; //set the selected point new coordinates
+				controlPoints[selectedPointIndex][1] = ypos - winHeight * 0.5f;
+			}
+			else {
+				manualErinto = false;
+				controlPoints[selectedPointIndex][0] = xpos - winWidth * 0.5f; //set the selected point new coordinates
+				controlPoints[selectedPointIndex][1] = ypos - winHeight * 0.5f;
+			}
+
 		}
 		else {
-			selectedPointIndex = getActivePoint1(controlPoints, 10, 8, xpos - winWidth * 0.5f, ypos - winHeight * 0.5f); //which point was clicked by user 
+			selectedPointIndex = getActivePoint1(controlPoints, givenPoints, 8, xpos - winWidth * 0.5f, ypos - winHeight * 0.5f); //which point was clicked by user 
 		}
 	}
 }
@@ -260,7 +288,7 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
 
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && givenPoints < 7) {
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && givenPoints < 8) {
 		glfwGetCursorPos(window, &xpos, &ypos);
 		GLint convertedX = xpos - winWidth * 0.5f;
 		GLint convertedY = ypos- winHeight * 0.5f;
@@ -271,6 +299,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	}
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 		movePoint = true; //left button was presseb, so we need to do some interact inside the mouseMove function
+		
 	}
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
 		movePoint = false; //left mouse button was released so we can take a rest
@@ -280,6 +309,76 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	
 		//std::cout << "kattintott" << std::endl;
 }
+
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	
+	
+		if (key == GLFW_KEY_1 && action==GLFW_PRESS)
+		{
+			if (keyPressed == 0) {
+				keyPressed = -1;
+			}
+			else {
+				keyPressed = 0;
+			}
+
+		}
+		if (key == GLFW_KEY_2 && action == GLFW_PRESS)
+		{
+			if (keyPressed == 1) {
+				keyPressed = -1;
+			}
+			else {
+				keyPressed = 1;
+			}
+
+		}
+		if (key == GLFW_KEY_3 && action == GLFW_PRESS)
+		{
+			if (keyPressed == 2) {
+				keyPressed = -1;
+			}
+			else {
+				keyPressed = 2;
+			}
+
+		}
+		if (key == GLFW_KEY_4 && action == GLFW_PRESS)
+		{
+			if (keyPressed == 3) {
+				keyPressed = -1;
+			}
+			else {
+				keyPressed = 3;
+			}
+
+		}
+		if (key == GLFW_KEY_5 && action == GLFW_PRESS)
+		{
+			if (keyPressed == 4) {
+				keyPressed = -1;
+			}
+			else {
+				keyPressed = 4;
+			}
+
+		}
+		if (key == GLFW_KEY_6 && action == GLFW_PRESS)
+		{
+			if (keyPressed == 5) {
+				keyPressed = -1;
+			}
+			else {
+				keyPressed = 5;
+			}
+
+		}
+
+		
+}
+
 
 
 int main (int argc, char** argv)
@@ -301,6 +400,7 @@ int main (int argc, char** argv)
 
 	glfwSetCursorPosCallback(window, cursor_position_callback);
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
+	glfwSetKeyCallback(window, key_callback);
 	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
 

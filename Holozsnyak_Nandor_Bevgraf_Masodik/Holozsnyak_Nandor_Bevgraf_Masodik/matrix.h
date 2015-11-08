@@ -798,6 +798,16 @@ class Matrix {
 		return *this;
 	}
 
+	void RotateX(double alpha) {
+		Matrix<T> Forgat(3, 3);
+		Forgat << cos(alpha) << -sin(alpha) << 0;
+		Forgat << sin(alpha) << cos(alpha) << 0;
+		Forgat << 0 << 0 << 1;
+
+		*this = Forgat*(*this);
+
+	}
+
 protected:
 	// egy pár privát tag.
 	int siX;

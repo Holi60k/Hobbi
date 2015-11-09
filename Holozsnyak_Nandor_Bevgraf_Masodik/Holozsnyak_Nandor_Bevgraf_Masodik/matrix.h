@@ -58,7 +58,7 @@ class Matrix {
 		this->~Matrix();
 	}
 	// mozgató szemantika
-	/*Matrix (Matrix<T> && A) {
+	Matrix (Matrix<T> && A) {
 
 		//std::cout << "move ctor" << std::endl;
 		Matx = new T*[A.GetX()];
@@ -71,9 +71,9 @@ class Matrix {
 		siY = A.GetY();
 		Squared = A.GetSquared();
 		Det_Sign = A.Get_Det_Sign();
-	}*/
+	}
 	// mozgató értékadá
-	/*Matrix & operator= (Matrix<T> && A) {
+	Matrix & operator= (Matrix<T> && A) {
 
 		//std::cout << "move assingment" << std::endl;
 		siX = A.GetX();
@@ -81,18 +81,18 @@ class Matrix {
 		Squared = A.GetSquared();
 		Det_Sign = A.Get_Det_Sign();
 		// egy előre lefoglalt kibaszott 0 terület törlése :'(
-//		delete [] Matx;
+		//delete [] Matx;
 
 
 		Matx = new T*[siX];
 		for (int i = 0; i < siX; i++) {
 			// aztán pedig egyesével lefoglalunk a mutatók számára dinamikus memóriát
 			Matx[i] =  A.Matx[i];
-			A.Matx[i] = nullptr;
+			A.Matx[i] = NULL;
 		}
 		return *this;
 
-	}*/
+	}
 
 	// értékadó operátorunk, másoló értékadás!
 	Matrix & operator= (Matrix & A) {
@@ -196,8 +196,9 @@ class Matrix {
 
 	Matrix operator* (const Matrix & A) {
 		T Var = 0;
+		Matrix<T> Result(this->GetX(), A.GetY());
 		if (this->GetY() == A.GetX()) {
-			Matrix<T> Result(this->GetX(), A.GetY());
+			
 
 			for (int i = 0; i < Result.GetY();i++) {
 				for (int j = 0; j < Result.GetX(); j++) {

@@ -196,23 +196,24 @@ class Matrix {
 
 	Matrix operator* (const Matrix & A) {
 		T Var = 0;
-		Matrix<T> Result(this->GetX(), A.GetY());
+		//Matrix<T> Result(this->GetX(), A.GetY());
+		
 		if (this->GetY() == A.GetX()) {
 			
-
-			for (int i = 0; i < Result.GetY();i++) {
-				for (int j = 0; j < Result.GetX(); j++) {
+			Matrix<T> *Result = new Matrix<T>(this->GetX(), A.GetY());
+			for (int i = 0; i < Result->GetY();i++) {
+				for (int j = 0; j < Result->GetX(); j++) {
 
 					for (int l = 0; l < this->GetY();l++) {
 						Var += this->GetValue(j, l) * A.GetValue(l, i);
 					}
-					Result.FillMatrix(Var, j, i);
+					Result->FillMatrix(Var, j, i);
 					Var = 0;
 
 				}
 
 			}
-			return Result;
+			return *Result;
 		}
 		else {
 			std::cout << "Sorry I can not multiplicate these two Matrixes..." << std::endl;

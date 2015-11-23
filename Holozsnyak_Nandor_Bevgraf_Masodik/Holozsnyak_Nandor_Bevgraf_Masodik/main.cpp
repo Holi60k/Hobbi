@@ -57,9 +57,8 @@ void init()
 	glLoadIdentity();         
 	glPointSize(10.0);
 	glEnable(GL_POINT_SMOOTH);
-	
-	
 	glOrtho(-(GLdouble)winWidth / 2, (GLdouble)winWidth / 2, (GLdouble)winHeight / 2, -(GLdouble)winHeight / 2, 0, 1);
+	glLineStipple(1, 0x00FF);
 }
 
 #define MAX_DEGREE 20
@@ -68,7 +67,7 @@ int numControls = 5, numControls2;                   /* control pontok számai */
 double controls[MAX_DEGREE + 1][2];
 double controls2[MAX_DEGREE + 1][3];
 int keyPressed = -1;
-
+GLint selectedPointIndex = -1;
 GLdouble param = 0.5;
 #define NUM_CONTROLS 7+1
 GLdouble controlPoints[NUM_CONTROLS][2];
@@ -130,29 +129,27 @@ void HermiteIv() {
 	//Csoba István - Piazza
 	erintoX = 4 * (controlPoints[4][0] - controlPoints[3][0]);
 	erintoY = 4 * (controlPoints[4][1] - controlPoints[3][1]);
+	if (selectedPointIndex != 7) {
+		
+		controlPoints[7][0] = erintoX + controlPoints[4][0];
+		controlPoints[7][1] = erintoY + controlPoints[4][1];		
+	}
+
 	G << controlPoints[4][0] << controlPoints[5][0] << controlPoints[6][0] << erintoX;
 	G << controlPoints[4][1] << controlPoints[5][1] << controlPoints[6][1] << erintoY;
-	if (manualErinto == false) {
-		//controlPoints[7][0] = (controlPoints[4][0] + 2 * (controlPoints[4][0] - controlPoints[3][0]));
-		//controlPoints[7][0] = ;
-		//controlPoints[7][1] =  4 * ( controlPoints[4][1] - controlPoints[3][1]);
-		//controlPoints[7][1] = (controlPoints[4][1] + 2 * (controlPoints[4][1] - controlPoints[3][1]));
-	}
-	controlPoints[7][0] = erintoX + controlPoints[4][0];
-	controlPoints[7][1] = erintoY + controlPoints[4][1];
+	
 	glPointSize(8.0);
 	glBegin(GL_POINTS);
 		glColor3f(1.0, 0.0, 0.0);
-	//	glVertex2d(controlPoints[7][0], controlPoints[7][1]); //display a point
 	glEnd();
 
+	glEnable(GL_LINE_STIPPLE);
 	glBegin(GL_LINE_STRIP);
-		glColor3f(1.0, 0.0, 0.0);
+		glColor3f(0.0, 0.0, 0.0);
 		glVertex2d(controlPoints[4][0], controlPoints[4][1]);
 		glVertex2d(controlPoints[7][0], controlPoints[7][1]);
-		//controlPoints[7][0] += controlPoints[4][0];
-		//controlPoints[7][1] += controlPoints[4][1];
 	glEnd();
+	glDisable(GL_LINE_STIPPLE);
 	
 	C = G*M;
 	
@@ -229,7 +226,7 @@ void draw()
 
 GLint dragged = -1;
 bool movePoint = false;
-GLint selectedPointIndex = -1;
+
 
 GLfloat dist2(POINT2D P1, POINT2D P2) {
 	GLfloat t1 = P1.x - P2.x;
@@ -252,6 +249,7 @@ GLint getActivePoint1(GLdouble p[][2], GLint size, GLint sens, GLint x, GLint y)
 	return -1;
 }
 double xpos, ypos;
+double seged[2][2];
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
 	if (movePoint) {
@@ -259,13 +257,13 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 			
 			
 			if (selectedPointIndex == 7) {
-				manualErinto = true;
-				erintoX = 4 * (controlPoints[4][0] - controlPoints[3][0]);
-				erintoY = 4 * (controlPoints[4][1] - controlPoints[3][1]);
-				controlPoints[selectedPointIndex][0] = xpos - winWidth * 0.5f; //set the selected point new coordinates
-				controlPoints[selectedPointIndex][1] = ypos - winHeight * 0.5f;
-				controlPoints[3][0] = (4 * controlPoints[4][0] - controlPoints[7][0]) / 4;
-				controlPoints[3][1] = (4 * controlPoints[4][1] - controlPoints[7][1]) / 4;				
+				
+				controlPoints[7][0] = xpos - winWidth * 0.5f; //set the selected point new coordinates
+				controlPoints[7][1] = ypos - winHeight * 0.5f;
+				seged[0][0] = controlPoints[7][0] - controlPoints[4][0];
+				seged[0][1] = controlPoints[7][1] - controlPoints[4][1];
+				controlPoints[3][0] = (seged[0][0] / -4) + controlPoints[4][0];
+				controlPoints[3][1] = (seged[0][1] / -4) + controlPoints[4][1];
 				
 			}
 			else {

@@ -232,7 +232,7 @@ GLdouble cX = (winWidth - winHeight) / 2.0f + 150, cY = 0, cW = winHeight / 2, c
 GLdouble center = 6.0f;
 
 
-void initEltolasMatrix(int x, int y, int z) {
+void initEltolasMatrix(double x, double y, double z) {
 	initIdentityMatrix(E);
 
 	/*
@@ -300,6 +300,8 @@ double deltaA = 0.01;
 /**
 * elõállítja a szükséges mátrixokat
 */
+double tA = 5,tB = 18,tC = 5;
+double sarok = 12;
 void initTransformations()
 {
 
@@ -312,14 +314,14 @@ void initTransformations()
 	//T = W×C×K
 	mulMatrices(Vc, view, Tmp);
 	mulMatrices(Wc, Tmp, Sik);
-
+	
 	//T = W×C×K×E×S
 	//Azaz ha S a skálázás, E az eltolás mátrixát jelöli egy hasáb esetén, akkor az alábbi transzformációs lánc adja a végsõ mátrixot.
 	//5×5 egység alapterületû, 18 egységnyi magasságú hasáb
 	//Téglalapok
-	initSkalazasMatrix(5, 18, 5);
+	initSkalazasMatrix(tA, tB, tC);
 	// elsõ téglatest
-	initEltolasMatrix(-12, 9, 12);
+	initEltolasMatrix(-sarok+tA/2, 9, sarok - tA / 2);
 	mulMatrices(E, S, TempR);
 	mulMatrices(view, TempR, TempE);
 	mulMatrices(Vc, TempE, Tmp);
@@ -328,7 +330,7 @@ void initTransformations()
 
 
 	// mádosik téglatest
-	initEltolasMatrix(12, 9, 12);
+	initEltolasMatrix(sarok - tA / 2, 9, sarok - tA / 2);
 	mulMatrices(E, S, TempR);
 	mulMatrices(view, TempR, TempE);
 	mulMatrices(Vc, TempE, Tmp);
@@ -336,7 +338,7 @@ void initTransformations()
 
 
 	// harmadik
-	initEltolasMatrix(-12, 9, -12);
+	initEltolasMatrix(-sarok + tA / 2, 9, -sarok + tA / 2);
 	mulMatrices(E, S, TempR);
 	mulMatrices(view, TempR, TempE);
 	mulMatrices(Vc, TempE, Tmp);
@@ -344,7 +346,7 @@ void initTransformations()
 
 
 	// negyedik
-	initEltolasMatrix(12, 9, -12);
+	initEltolasMatrix(sarok - tA / 2, 9, -sarok + tA / 2);
 	mulMatrices(E, S, TempR);
 	mulMatrices(view, TempR, TempE);
 	mulMatrices(Vc, TempE, Tmp);
@@ -467,8 +469,8 @@ void drawGrid(VECTOR3 color, MATRIX4 T)
 	glColor3f(color.x, color.y, color.z);
 
 	glBegin(GL_LINES);
-		for (int i = -12; i <= 12; i++) {
-			ph = initVector4(-12, 0, i, 1.0f);
+	for (double i = -sarok; i <= sarok; i+=sarok/12) {
+			ph = initVector4(-sarok, 0, i, 1.0f);
 
 			// alkalmazzuk a transzformációt
 			pt = mulMatrixVector(T, ph);
@@ -479,7 +481,7 @@ void drawGrid(VECTOR3 color, MATRIX4 T)
 			// kirajzoljuk a csúcsot
 			glVertex2f(pih.x, pih.y);
 
-			ph = initVector4(12, 0, i, 1.0f);
+			ph = initVector4(sarok, 0, i, 1.0f);
 
 			// alkalmazzuk a transzformációt
 			pt = mulMatrixVector(T, ph);
@@ -495,8 +497,8 @@ void drawGrid(VECTOR3 color, MATRIX4 T)
 		}
 	glEnd();
 	glBegin(GL_LINES);
-	for (int i = -12; i <= 12; i++) {
-		ph = initVector4(i, 0, -12, 1.0f);
+	for (double i = -sarok ; i <= sarok; i+=sarok/12) {
+		ph = initVector4(i, 0, -sarok, 1.0f);
 
 		// alkalmazzuk a transzformációt
 		pt = mulMatrixVector(T, ph);
@@ -507,7 +509,7 @@ void drawGrid(VECTOR3 color, MATRIX4 T)
 		// kirajzoljuk a csúcsot
 		glVertex2f(pih.x, pih.y);
 
-		ph = initVector4(i, 0, 12, 1.0f);
+		ph = initVector4(i, 0, sarok, 1.0f);
 
 		// alkalmazzuk a transzformációt
 		pt = mulMatrixVector(T, ph);
@@ -612,7 +614,7 @@ void draw()
 	drawTorusz(initVector3(0.0f, 1.0f, 0.0f), Tcx);
 	drawTorusz(initVector3(1.0f, 0.0f, 0.0f), Tcy);
 	drawTorusz(initVector3(0.0f, 0.0f, 1.0f), Tcz);
-	deltaA += 0.001;
+	deltaA += 0.002;
 	initTransformations();
 	glFlush();
 }
@@ -680,7 +682,7 @@ int main(int argc, char ** argv)
 		return -1;
 
 	/* Create a windowed mode window and its OpenGL context */
-	window = glfwCreateWindow(winWidth, winHeight, "Wonderful cube", NULL, NULL);
+	window = glfwCreateWindow(winWidth, winHeight, "Hazi feladat", NULL, NULL);
 	if (!window)
 	{
 		glfwTerminate();

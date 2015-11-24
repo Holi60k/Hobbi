@@ -1,8 +1,8 @@
+#include <GLFW\glfw3.h>                           // (or others, depending on the system in use)
+#include <cmath>
+#include <iostream>
+#include <stdio.h>
 #include <Torusz.h>
-#include <math.h>
-#include <time.h> 
-#define PI 3.141592653589793
-
 /*======================================*/
 
 /**
@@ -82,11 +82,11 @@ void initIdentityMatrix(MATRIX4 A)
 {
 	int i, j;
 
-	for (i = 0; i<4; i++)
-		for (j = 0; j<4; j++)
+	for (i = 0; i < 4; i++)
+		for (j = 0; j < 4; j++)
 			A[i][j] = 0.0f;
 
-	for (i = 0; i<4; i++)
+	for (i = 0; i < 4; i++)
 		A[i][i] = 1.0f;
 }
 
@@ -103,7 +103,7 @@ void initPersProjMatrix(MATRIX4 A, GLdouble s)
 
 /**
 * feltölti az A mátrixot a (wx,wy):(wx+ww,wy+wh) ablakból (vx,vy):(vx+vw,vy+vh) nézetbe
-* történ? transzformáció mátrixszával
+* történõ transzformáció mátrixszával
 */
 void initWtvMatrix(MATRIX4 A, GLdouble wx, GLdouble wy, GLdouble ww, GLdouble wh,
 	GLdouble vx, GLdouble vy, GLdouble vw, GLdouble vh)
@@ -183,9 +183,10 @@ GLdouble winWidth = 800.0f, winHeight = 600.0f;
 
 
 MATRIX4 view;
+double **cam;
 
 /**
-* mer?leges és centrális vetítések mátrixai
+* merõleges és centrális vetítések mátrixai
 */
 MATRIX4 Vc;
 
@@ -195,25 +196,187 @@ MATRIX4 Vc;
 MATRIX4 Wc;
 
 /**
-* a fenti mátrixokból el?állított két transzformációs mátrix
+* a fenti mátrixokból elõállított két transzformációs mátrix
 */
-MATRIX4 Tc;
+MATRIX4 Tcx, Tcy, Tcz, TC[4];
 
 /**
 * segédmátrix
 */
-MATRIX4 Tmp;
+MATRIX4 Tmp, TempR, TempE;
+
+/*
+* forgatási mátrixok
+*/
+MATRIX4 Rx, Ry, Rz;
+/*
+* eltolási mátrix
+*/
+MATRIX4 E;
+/*
+* skálázás mátrixa
+*/
+MATRIX4 S;
+
+MATRIX4 Sik;
 
 GLdouble alpha = 0.0f, deltaAlpha = 3.14f / 180.0f;
 
 /**
 * nézet koordinátái
 */
-GLdouble cX = (winWidth - winHeight) / 2.0f, cY = 0.0f, cW = winHeight, cH = winHeight;
+GLdouble cX = (winWidth - winHeight) / 2.0f + 150, cY = 0, cW = winHeight / 2, cH = winHeight / 2 - 100;
 /**
 * centrális vetítés középpontjának Z koordinátája
 */
-GLdouble center = 2.0f;
+GLdouble center = 6.0f;
+
+
+void initEltolasMatrix(int x, int y, int z) {
+	initIdentityMatrix(E);
+
+	/*
+	 <<1<< 0 << 0 << x
+	<< 0 << 1 << 0 << y
+	<< 0 << 0 << 1 << z
+	<< 0 << 0 << 0 << 1;
+	*/
+
+	E[0][3] = x;
+	E[1][3] = y;
+	E[2][3] = z;
+}
+void initSkalazasMatrix(double x, double y, double z) {
+	//initIdentityMatrix(S);
+	S[0][0] = x;
+	S[1][1] = y;
+	S[2][2] = z;
+	S[3][3] = 1;
+}
+void initRotationMatrixes(double alpha) {
+	initIdentityMatrix(Rx);
+	initIdentityMatrix(Ry);
+	initIdentityMatrix(Rz);
+
+	/*X:
+	<< 1 << 0 << 0 << 0
+	<< 0 << std::cos(alpha) << -std::sin(alpha) << 0
+	<< 0 << std::sin(alpha) << std::cos(alpha) << 0
+	<< 0 << 0 << 0 << 1;
+	*/
+	Rx[1][1] = std::cos(alpha);
+	Rx[1][2] = -std::sin(alpha);
+	Rx[2][1] = std::sin(alpha);
+	Rx[2][2] = std::cos(alpha);
+
+	/*
+	Y:
+	<< std::cos(alpha) << 0 << std::sin(alpha) << 0
+	<< 0 << 1 << 0 << 0
+	<< -std::sin(alpha) << 0 << std::cos(alpha) << 0
+	<< 0 << 0 << 0 << 1;
+	*/
+
+	Ry[0][0] = std::cos(alpha);
+	Ry[0][2] = std::sin(alpha);
+	Ry[2][0] = -std::sin(alpha);
+	Ry[2][2] = std::cos(alpha);
+
+	/*
+	Z:
+	<< std::cos(alpha) << -std::sin(alpha) << 0 << 0
+	<< std::sin(alpha) << std::cos(alpha) << 0 << 0
+	<< 0 << 0 << 1 << 0
+	<< 0 << 0 << 0 << 1;
+	*/
+	Rz[0][0] = std::cos(alpha);
+	Rz[0][1] = -std::sin(alpha);
+	Rz[1][0] = std::sin(alpha);
+	Rz[1][1] = std::cos(alpha);
+
+}
+
+double deltaA = 0.01;
+/**
+* elõállítja a szükséges mátrixokat
+*/
+void initTransformations()
+{
+
+	// vetítési mátrixok
+	initPersProjMatrix(Vc, center);
+
+	// Wtv mátrixok
+	initWtvMatrix(Wc, -0.5f, -0.5f, 1.0f, 1.0f, cX, cY, cW, cH);
+	//Sík mátrixa
+	//T = W×C×K
+	mulMatrices(Vc, view, Tmp);
+	mulMatrices(Wc, Tmp, Sik);
+
+	//T = W×C×K×E×S
+	//Azaz ha S a skálázás, E az eltolás mátrixát jelöli egy hasáb esetén, akkor az alábbi transzformációs lánc adja a végsõ mátrixot.
+	//5×5 egység alapterületû, 18 egységnyi magasságú hasáb
+	//Téglalapok
+	initSkalazasMatrix(5, 18, 5);
+	// elsõ téglatest
+	initEltolasMatrix(-12, 9, 12);
+	mulMatrices(E, S, TempR);
+	mulMatrices(view, TempR, TempE);
+	mulMatrices(Vc, TempE, Tmp);
+	mulMatrices(Wc, Tmp, TC[0]);
+
+
+
+	// mádosik téglatest
+	initEltolasMatrix(12, 9, 12);
+	mulMatrices(E, S, TempR);
+	mulMatrices(view, TempR, TempE);
+	mulMatrices(Vc, TempE, Tmp);
+	mulMatrices(Wc, Tmp, TC[1]);
+
+
+	// harmadik
+	initEltolasMatrix(-12, 9, -12);
+	mulMatrices(E, S, TempR);
+	mulMatrices(view, TempR, TempE);
+	mulMatrices(Vc, TempE, Tmp);
+	mulMatrices(Wc, Tmp, TC[2]);
+
+
+	// negyedik
+	initEltolasMatrix(12, 9, -12);
+	mulMatrices(E, S, TempR);
+	mulMatrices(view, TempR, TempE);
+	mulMatrices(Vc, TempE, Tmp);
+	mulMatrices(Wc, Tmp, TC[3]);
+
+	//M = W×C×K×L×R, tórusz mátrixa elõbb forgatom, eltolom, kamera, centrális vetítés és w2v
+	//Tóruszok
+	initRotationMatrixes(deltaA);
+	initEltolasMatrix(0, 9, 0);
+
+	// egyik tórusz - X tengely
+	mulMatrices(E, Rx, TempR);
+	mulMatrices(view, TempR, TempE);
+	mulMatrices(Vc, TempE, Tmp);
+	mulMatrices(Wc, Tmp, Tcx);
+
+
+	// második - Y tengely
+	mulMatrices(E, Ry, TempR);
+	mulMatrices(view, TempR, TempE);
+	mulMatrices(Vc, TempE, Tmp);
+	mulMatrices(Wc, Tmp, Tcy);
+
+	//harmadik - Z tengely
+	mulMatrices(E, Rz, TempR);
+	mulMatrices(view, TempR, TempE);
+	mulMatrices(Vc, TempE, Tmp);
+	mulMatrices(Wc, Tmp, Tcz);
+}
+
+/*======================================*/
+
 
 /**
 * egységkocka csúcsai
@@ -243,27 +406,125 @@ GLuint faces[24] =
 	4,5,6,7, //fels?
 };
 
-/**
-* el?állítja a szükséges mátrixokat
-*/
-void initTransformations()
+VECTOR3 eye, up, centerVec;
+double helyzet = 0.0;
+Torusz A, B, C;
+double R = 37;
+
+void drawCubes(VECTOR3 color, MATRIX4 T)
 {
-	// vetítési mátrixok
-	initPersProjMatrix(Vc, center);
+	int i, j, id = 0;
 
-	// Wtv mátrixok
-	initWtvMatrix(Wc, -0.5f, -0.5f, 1.0f, 1.0f, cX, cY, cW, cH);
+	VECTOR4 ph, pt;
+	VECTOR3 pih;
 
-	// centrális mátrixok
-	mulMatrices(Vc, view, Tmp);
-	mulMatrices(Wc, Tmp, Tc);
+	// beállítja a kocka éleinek vastagságát
+	glLineWidth(2.0f);
+
+	// beállítja a kocka színét
+	glColor3f(color.x, color.y, color.z);
+
+	// végigmegyünk a lapokon
+	for (i = 0; i < 6; i++)
+	{
+		glBegin(GL_LINE_LOOP);
+
+		// végigmegyünk a csúcsokon
+		for (j = 0; j < 4; j++)
+		{
+			// homogén koordinátás alakra hozzuk a csúcsot
+			ph = initVector4(identityCube[faces[id]].x, identityCube[faces[id]].y, identityCube[faces[id]].z, 1.0f);
+
+			// alkalmazzuk a transzformációt
+			pt = mulMatrixVector(T, ph);
+
+			// visszatérünk inhomogén alakra
+			pih = initVector3(pt.x / pt.w, pt.y / pt.w, pt.z / pt.w);
+
+			// kirajzoljuk a csúcsot
+			glVertex2f(pih.x, pih.y);
+
+			id++;
+		}
+
+		glEnd();
+	}
 }
 
-/*======================================*/
 
-VECTOR3 eye, up, centerVec;
 
-double R = 1;
+void drawGrid(VECTOR3 color, MATRIX4 T)
+{
+	int i, j, id = 0;
+
+	VECTOR4 ph, pt;
+	VECTOR3 pih;
+
+	// beállítja a kocka éleinek vastagságát
+	glLineWidth(2.0f);
+
+	// beállítja a kocka színét
+	glColor3f(color.x, color.y, color.z);
+
+	glBegin(GL_LINES);
+		for (int i = -12; i <= 12; i++) {
+			ph = initVector4(-12, 0, i, 1.0f);
+
+			// alkalmazzuk a transzformációt
+			pt = mulMatrixVector(T, ph);
+
+			// visszatérünk inhomogén alakra
+			pih = initVector3(pt.x / pt.w, pt.y / pt.w, pt.z / pt.w);
+
+			// kirajzoljuk a csúcsot
+			glVertex2f(pih.x, pih.y);
+
+			ph = initVector4(12, 0, i, 1.0f);
+
+			// alkalmazzuk a transzformációt
+			pt = mulMatrixVector(T, ph);
+
+			// visszatérünk inhomogén alakra
+			pih = initVector3(pt.x / pt.w, pt.y / pt.w, pt.z / pt.w);
+
+			// kirajzoljuk a csúcsot
+			glVertex2f(pih.x, pih.y);
+			//glVertex2f(-12,i);
+			//glVertex2f(12, -i);
+
+		}
+	glEnd();
+	glBegin(GL_LINES);
+	for (int i = -12; i <= 12; i++) {
+		ph = initVector4(i, 0, -12, 1.0f);
+
+		// alkalmazzuk a transzformációt
+		pt = mulMatrixVector(T, ph);
+
+		// visszatérünk inhomogén alakra
+		pih = initVector3(pt.x / pt.w, pt.y / pt.w, pt.z / pt.w);
+
+		// kirajzoljuk a csúcsot
+		glVertex2f(pih.x, pih.y);
+
+		ph = initVector4(i, 0, 12, 1.0f);
+
+		// alkalmazzuk a transzformációt
+		pt = mulMatrixVector(T, ph);
+
+		// visszatérünk inhomogén alakra
+		pih = initVector3(pt.x / pt.w, pt.y / pt.w, pt.z / pt.w);
+
+		// kirajzoljuk a csúcsot
+		glVertex2f(pih.x, pih.y);
+		//glVertex2f(-12,i);
+		//glVertex2f(12, -i);
+
+	}
+	glEnd();
+}
+
+
 
 void init()
 {
@@ -274,6 +535,8 @@ void init()
 	glOrtho(0.0f, winWidth, 0.0f, winHeight, 0.0f, 1.0f);
 
 	eye = initVector3(0.0, 0.0, R); //megadja a kamera pozícióját (Ez legyen most a z tengely pozitív felén)
+	eye.x = R*cos(alpha);
+	eye.z = R*sin(alpha);
 	centerVec = initVector3(0.0, 0.0, 0.0); //megadja, hogy merre néz a kamera (Ez legyen most az origó)
 	up = initVector3(0.0, 1.0, 0.0); //megdja, hogy merre van a felfele irány (Ez legyen most az y tengely)
 
@@ -281,61 +544,76 @@ void init()
 
 	initTransformations();
 }
+double PI = 3.14159265358979323846;
+void drawTorusz(VECTOR3 color, MATRIX4 T) {
 
-/*
-void init()
-{
-	glClearColor(1.0, 1.0, 1.0, 0.0);
+	double B[4][1];
+	float theta, fi;
+	float c = 8, a = 1;
+	VECTOR4 ph, pt;
+	VECTOR3 pih;
+	glColor3f(color.x, color.y, color.z);
+	for (theta = 0; theta <= 2 * PI + 0.00001; theta += PI/6) {
+		glBegin(GL_LINE_LOOP);
+		for (fi = 0; fi <= 2 * PI + 0.00001; fi += PI / 6) {
+			B[0][0] = (c + a*cos(theta))*cos(fi);
+			B[1][0] = a*sin(theta);
+			B[2][0] = (c + a*cos(theta))*sin(fi);
+			B[3][0] = 1.0;
+			// homogén koordinátás alakra hozzuk a csúcsot
+			ph = initVector4(B[0][0], B[1][0], B[2][0], 1.0);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	//glOrtho(0.f, winWidth, 0.f, winHeight, 0.f, 1.f);
-	//Origó központúak vagyunk most már
-	glOrtho(-(GLdouble)winWidth / 2, (GLdouble)winWidth / 2, (GLdouble)winHeight / 2, -(GLdouble)winHeight / 2, 0, 1);
-}*/
+			// alkalmazzuk a transzformációt
+			pt = mulMatrixVector(T, ph);
 
-void MatrixMul(Matrix<double> *A, Matrix<double> *B, Matrix<double> *C) {
-	double Var = 0;
-	if (A->GetY() == B->GetX()) {
+			// visszatérünk inhomogén alakra
+			pih = initVector3(pt.x / pt.w, pt.y / pt.w, pt.z / pt.w);
 
-		for (int i = 0; i < C->GetY();i++) {
-			for (int j = 0; j < C->GetX(); j++) {
+			// kirajzoljuk a csúcsot
+			glVertex2f(pih.x, pih.y);
+		}
+		glEnd();
+	}
 
-				for (int l = 0; l < A->GetY();l++) {
-					Var += A->GetValue(j, l) * B->GetValue(l, i);
-				}
-				C->FillMatrix(Var, j, i);
-				Var = 0;
 
-			}
+
+	for (fi = 0; fi <= 2 * PI + 0.000001; fi += PI / 6) {
+		glBegin(GL_LINE_LOOP);
+		for (theta = 0; theta <= 2 * PI + 0.0000001; theta += PI / 6) {
+			B[0][0] = (c + a*cos(theta))*cos(fi);
+			B[1][0] = a*sin(theta);
+			B[2][0] = (c + a*cos(theta))*sin(fi);
+			B[3][0] = 1.0;
+			// homogén koordinátás alakra hozzuk a csúcsot
+			ph = initVector4(B[0][0], B[1][0], B[2][0], 1.0);
+
+			// alkalmazzuk a transzformációt
+			pt = mulMatrixVector(T, ph);
+
+			// visszatérünk inhomogén alakra
+			pih = initVector3(pt.x / pt.w, pt.y / pt.w, pt.z / pt.w);
+
+			// kirajzoljuk a csúcsot
+			glVertex2f(pih.x, pih.y);
 
 		}
-
+		glEnd();
 	}
-	else {
-		std::cout << "Sorry I can not multiplicate these two Matrixes..." << std::endl;
-
-	}
-
 }
 
-GLdouble updateFrequency = 0.01, lastUpdate;
-Torusz A(PI/2,PI/6,0), B(0, 0,0), C(0, 0,0);
 void draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
-	glColor3f(0.0f, 0.4f, 0.2f);
-	double now = glfwGetTime();
-	//if (now - lastUpdate > updateFrequency) {
-		glColor3f(1.0f, 0.0f, 0.0f);
-		A.draw(1);
-		glColor3f(0.0f, 1.0f, 0.0f);
-		B.draw(2);
-		glColor3f(0.0f, 0.0f, 1.0f);
-		C.draw(3);
-		//lastUpdate = now;
-	//}
 
+	drawGrid(initVector3(0.0f, 0.0f, 0.0f), Sik);
+	for (int i = 0; i < 4; i++) {
+		drawCubes(initVector3(0.0f, 0.0f, 0.0f), TC[i]);
+	}
+	drawTorusz(initVector3(0.0f, 1.0f, 0.0f), Tcx);
+	drawTorusz(initVector3(1.0f, 0.0f, 0.0f), Tcy);
+	drawTorusz(initVector3(0.0f, 0.0f, 1.0f), Tcz);
+	deltaA += 0.001;
+	initTransformations();
 	glFlush();
 }
 
@@ -345,23 +623,20 @@ void keyPressed(GLFWwindow * windows, GLint key, GLint scanCode, GLint action, G
 		case GLFW_KEY_LEFT:
 			alpha += deltaAlpha;
 			eye.x = R*cos(alpha);
-			eye.y = 0.0;
 			eye.z = R*sin(alpha);
 			initViewMatrix(view, eye, centerVec, up);
 			initTransformations();
 			break;
 		case GLFW_KEY_UP:
-			R -= 0.1f;
 			eye.x = R * cos(alpha);
-			eye.y = 0.0;
+			eye.y += 2;
 			eye.z = R * sin(alpha);
 			initViewMatrix(view, eye, centerVec, up);
 			initTransformations();
 			break;
 		case GLFW_KEY_DOWN:
-			R += 0.1f;
 			eye.x = R* cos(alpha);
-			eye.y = 0.0;
+			eye.y -= 2;
 			eye.z = R * sin(alpha);
 			initViewMatrix(view, eye, centerVec, up);
 			initTransformations();
@@ -369,20 +644,35 @@ void keyPressed(GLFWwindow * windows, GLint key, GLint scanCode, GLint action, G
 		case GLFW_KEY_RIGHT:
 			alpha -= deltaAlpha;
 			eye.x = R*cos(alpha);
-			eye.y = 0.0;
 			eye.z = R*sin(alpha);
+			initViewMatrix(view, eye, centerVec, up);
+			initTransformations();
+			break;
+		case GLFW_KEY_KP_ADD:
+			R -= 2;
+			eye.x = R* cos(alpha);
+			//eye.y 
+			eye.z = R * sin(alpha);
+			initViewMatrix(view, eye, centerVec, up);
+			initTransformations();
+			break;
+		case GLFW_KEY_KP_SUBTRACT:
+			R += 2;
+			eye.x = R* cos(alpha);
+			//eye.y 
+			eye.z = R * sin(alpha);
 			initViewMatrix(view, eye, centerVec, up);
 			initTransformations();
 			break;
 		}
 	}
 
+
 	glfwPollEvents();
 }
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
-
 	GLFWwindow* window;
 
 	/* Initialize the library */
@@ -390,7 +680,7 @@ int main(int argc, char** argv)
 		return -1;
 
 	/* Create a windowed mode window and its OpenGL context */
-	window = glfwCreateWindow(winWidth, winHeight, "Circle", NULL, NULL);
+	window = glfwCreateWindow(winWidth, winHeight, "Wonderful cube", NULL, NULL);
 	if (!window)
 	{
 		glfwTerminate();
@@ -400,17 +690,17 @@ int main(int argc, char** argv)
 	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
 
-	init();
 	glfwSetKeyCallback(window, keyPressed);
+
+	init();
+
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
 	{
-		draw(); /* Render here */
+		draw();
 
-		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
 
-		/* Poll for and process events */
 		glfwPollEvents();
 	}
 

@@ -133,8 +133,8 @@ class Matrix {
 	}
 	// Másoló konstuktor
 	Matrix (const Matrix<T> & t) {
-		std::cout << "copy ctor " << std::endl;
-		t.GetWholeMatrix();
+		//std::cout << "copy ctor " << std::endl;
+		//t.GetWholeMatrix();
 		siX = t.GetX();
 		siY = t.GetY();
 		delete[] Matx;
@@ -228,8 +228,7 @@ class Matrix {
 
 		}
 		else {
-			std::cout << "Sorry I can not multiplicate these two Matrixes..." << std::endl;
-
+			//std::cout << "Cant be multiplicated Y:" << A->GetY() << " X:" << B->GetX() << std::endl;
 		}
 
 	}
@@ -841,7 +840,7 @@ class Matrix {
 
 
 	//centrális vetítés
-	void CVetites(Matrix<double> & P, double s) {
+	void CVetites(double s) {
 		TT = new Matrix<double>(4, 4);
 		*TT << 1 << 0 << 0 << 0
 			<< 0 << 1 << 0 << 0
@@ -855,7 +854,7 @@ class Matrix {
 
 
 	//merőleges vetítés
-	void Vetites(Matrix<double> & P) {
+	void Vetites() {
 		TT = new Matrix<double>(4, 4);
 		*TT << 1 << 0 << 0 << 0
 			<< 0 << 1 << 0 << 0
@@ -896,7 +895,7 @@ class Matrix {
 		delete TT;
 	}
 
-	void Window2Viewport(int wleft = -1,int wup = -1,int wright = 1, int wbottom = 1, int vleft = 350,int vup = 150, int vright = 450,int vbottom =250) {
+	void Window2Viewport(float wleft = -0.5, float wup = -0.5, float wright = 0.5, float wbottom = 0.5, float vleft = 10, float vup = 10, float vright = 20, float vbottom = 20) {
 		TT = new Matrix<double>(4, 4);
 		*TT << (vright - vleft) / (wright - wleft) << 0 << 0 << vleft - wleft * ((vright - vleft) / (wright - wleft))
 			<< 0 << (vup - vbottom) / (wup - wbottom) << 0 << vbottom - wbottom * ((vup - vbottom) / (wup - wbottom))
@@ -928,6 +927,14 @@ class Matrix {
 		default:
 			break;
 		}
+	}
+
+	void setMatrix(T** M) {
+		this->Matx = M;
+	}
+
+	T** getMatrix() {
+		return Matx;
 	}
 
 

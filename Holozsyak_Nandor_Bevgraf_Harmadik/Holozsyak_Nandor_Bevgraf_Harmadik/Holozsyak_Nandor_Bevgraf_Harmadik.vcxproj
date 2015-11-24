@@ -150,6 +150,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="oldmain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="includes.h" />

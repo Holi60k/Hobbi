@@ -576,9 +576,9 @@ FACE initFace(GLuint v0, GLuint v1, GLuint v2, GLuint v3, GLdouble avg) {
 
 int comparePointsbyAtlag(const void *a, const void *b) {
 
-	if (((*(FACE*)a).cAVG < ((*(FACE*)b).cAVG))) return -1;
+	if (((*(FACE*)a).cAVG > ((*(FACE*)b).cAVG))) return -1;
 	if (((*(FACE*)a).cAVG == ((*(FACE*)b).cAVG))) return  0;
-	if (((*(FACE*)a).cAVG > ((*(FACE*)b).cAVG))) return  1;
+	if (((*(FACE*)a).cAVG < ((*(FACE*)b).cAVG))) return  1;
 
 
 }
@@ -636,10 +636,10 @@ std::vector<VECTOR3> pontok;
 std::vector<VECTOR3> transformedPontok;
 std::vector<FACE> faceTorusz;
 void drawToruszWithPlanes(VECTOR3 color, MATRIX4 T, MATRIX4 CAM) {
-	Matrix<double> vectorPl(12, 12);
+
 	double B[4][1];
 	double theta = PI / 6, fi;
-	float c = 3,a = 2;
+	float c = 10,a = 4;
 	VECTOR4 ph, pt;
 	VECTOR3 pih;
 	int i = 0, j = 0;
@@ -649,10 +649,10 @@ void drawToruszWithPlanes(VECTOR3 color, MATRIX4 T, MATRIX4 CAM) {
 	//2PI / (Pi/12) = 24;
 	//2PI / (Pi/8) = 16;
 	//2PI / (Pi/4) = 8;
-	double delta = PI / 8;
+	double delta = PI / 10;
 
 	int dI = (int)((2*PI)/(delta)), dJ = (int)((2 * PI) / (delta));
-	std::cout <<(double) (2 * PI) / (delta) <<"~" << dI << std::endl;
+	//std::cout <<(double) (2 * PI) / (delta) <<"~" << dI << std::endl;
 	int K = 1;
 	
 	for (fi = 0; fi < 2 * PI + delta; fi += delta) {
@@ -676,41 +676,8 @@ void drawToruszWithPlanes(VECTOR3 color, MATRIX4 T, MATRIX4 CAM) {
 
 	}
 
-	/*for (fi = 0; fi < 2 * PI + delta; fi += delta) {
-		//std::cout << K++ << ". 12 pont" << std::endl;
-		for (theta = 0; theta < 2 * PI; theta += delta) {
-			B[0][0] = (c + a*cos(theta))*cos(fi);
-			B[1][0] = a*sin(theta);
-			B[2][0] = (c + a*cos(theta))*sin(fi);
-			B[3][0] = 1.0;
-			// homogén koordinátás alakra hozzuk a csúcsot
-			ph = initVector4(B[0][0], B[1][0], B[2][0], 1.0);
-			//std::cout << ph.x << " - " << ph.y << " - " << ph.z << " - " << ph.w << std::endl;
-			// alkalmazzuk a transzformációt
-			pt = mulMatrixVector(T, ph);
-			//std::cout << "z/w:" << pt.z / pt.w << std::endl;
-			// visszatérünk inhomogén alakra
-			pih = initVector3(pt.x / pt.w, pt.y / pt.w, pt.z / pt.w);
-			pontok.push_back(pih);
-		//	std::cout << pih.x << " - " << pih.y << " - " << pih.z << std::endl;
-			glColor3f(0, theta, 0.5);
-			glBegin(GL_POINTS);
-			glVertex2d(pih.x, pih.y);
-			glEnd();
-		}
 
-	}*/
-
-	//qsort(&pontok4d[0], pontok4d.size(), sizeof(VECTOR4), comparePointsbyZ4D);
-	
-	/*for (int l = 0; l < pontok4d.size(); l++) {
-		ph = initVector4(pontok4d[l].x, pontok4d[l].y, pontok4d[l].z, 1.0);
-		pt = mulMatrixVector(T, ph);
-		pih = initVector3(pt.x / pt.w, pt.y / pt.w, pt.z / pt.w);
-		pontok.push_back(pih);
-	}*/
-
-	double cAVG = 0, cAVG1 = 0, cAVG2 = 0, cAVG3 = 0, cAVG4 = 0;
+	double cAVG = 0;
 
 	for (i = 0; i < dI; i++) {
 		for (int j = 0; j < dJ; j++) {
@@ -769,7 +736,7 @@ void drawToruszWithPlanes(VECTOR3 color, MATRIX4 T, MATRIX4 CAM) {
 		//std::cout << "toCamera:" << toCamera.x << " - " << toCamera.y << " - " << toCamera.z << std::endl;
 		//std::cout << "normal:" << normal.x << " - " << normal.y << " - " << normal.z << std::endl;
 		//std::cout << "dotProduct:" << dotProduct(normal, toCamera) << std::endl;
-		if (dotProduct(normal, toCamera) < 0) {
+		if (dotProduct(normal, toCamera) > 0) {
 		
 			//glColor3f((double)i / faceTorusz.size(), (double)i / faceTorusz.size(), 0);
 			glColor3f(0, 0, 0);
@@ -818,8 +785,8 @@ void draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 	drawGrid(initVector3(0, 0, 0), Sik);
-	drawToruszWithPlanes(initVector3(0.0f, 1.0f, 0.0f), Tcx,view);
-	//drawTorusz(initVector3(0.0f, 0.0f, 1.0f), Tcx);
+	drawToruszWithPlanes(initVector3(0.0f, 1.0f, 0.0f), Tcx,TempE);
+//	drawTorusz(initVector3(0.0f, 0.0f, 1.0f), Tcx);
 	deltaA += 0.002;
 	initTransformations();
 	glFlush();
@@ -889,7 +856,7 @@ int main(int argc, char ** argv)
 		return -1;
 
 	/* Create a windowed mode window and its OpenGL context */
-	window = glfwCreateWindow(winWidth, winHeight, "Hazi feladat", NULL, NULL);
+	window = glfwCreateWindow(winWidth, winHeight, "4. hazi feladat", NULL, NULL);
 	if (!window)
 	{
 		glfwTerminate();
@@ -898,7 +865,7 @@ int main(int argc, char ** argv)
 
 	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
-
+	
 	glfwSetKeyCallback(window, keyPressed);
 
 	init();

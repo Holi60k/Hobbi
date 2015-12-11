@@ -1,1 +1,20 @@
-﻿  Holozsnyak_Nando_Bevgraf_Elso.vcxproj -> C:\Users\HNK\Source\Repos\HobbiRepo\Holozsnyak_Nando_Bevgraf_Elso\Debug\Holozsnyak_Nando_Bevgraf_Elso.exe
+﻿  main.cpp
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\header.h(806): warning C4522: 'Matrix<T>': multiple assignment operators specified
+          with
+          [
+              T=GLdouble
+          ]
+  c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\header.h(810): note: see reference to class template instantiation 'Matrix<T>' being compiled
+          with
+          [
+              T=GLdouble
+          ]
+  c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(21): note: see reference to class template instantiation 'Vector<GLdouble>' being compiled
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(149): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(160): warning C4244: 'argument': conversion from 'GLdouble' to 'GLfloat', possible loss of data
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(173): warning C4244: 'argument': conversion from 'GLdouble' to 'GLfloat', possible loss of data
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(174): warning C4244: 'argument': conversion from 'GLdouble' to 'GLfloat', possible loss of data
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(246): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(222): warning C4101: 'A': unreferenced local variable
+c:\users\hnk\source\repos\hobbirepo\holozsnyak_nando_bevgraf_elso\holozsnyak_nando_bevgraf_elso\main.cpp(619): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+  Holozsnyak_Nando_Bevgraf_Elso.vcxproj -> C:\Users\HNK\Source\Repos\HobbiRepo\Holozsnyak_Nando_Bevgraf_Elso\Debug\Holozsnyak_Nando_Bevgraf_Elso.exe

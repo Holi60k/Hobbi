@@ -40,8 +40,8 @@ class Matrix {
 		for (int i = 0; i < this->GetX(); i++) {
 			try
 			{
-				if(Matx[i] != NULL)
-					delete[] Matx[i];
+				//if(Matx[i] != NULL)
+					//delete[] Matx[i];
 			}
 			catch (const std::exception&e)
 			{
@@ -221,6 +221,31 @@ class Matrix {
 		}
 		return 0;
 	}
+
+	void MatrixMul(Matrix<double> *A, Matrix<double> *B, Matrix<double> *C) {
+		double Var = 0;
+
+		if (A->GetY() == B->GetX()) {
+			for (int i = 0; i < A->GetY();i++) {
+				for (int j = 0; j < A->GetX(); j++) {
+
+					for (int l = 0; l < A->GetY();l++) {
+						Var += A->GetValue(j, l) * B->GetValue(l, i);
+					}
+					C->FillMatrix(Var, j, i);
+					Var = 0;
+
+				}
+
+			}
+
+		}
+		else {
+			std::cout << "Sorry I can not multiplicate these two Matrixes..." << std::endl;
+
+		}
+	}
+
 
 	Matrix & operator*= (const T & B) {
 		
@@ -827,9 +852,17 @@ class Matrix {
 		Forgat << cos(alpha) << -sin(alpha) << 0;
 		Forgat << sin(alpha) << cos(alpha) << 0;
 		Forgat << 0 << 0 << 1;
+		//*this = Forgat*(*this);
+		MatrixMul(&Forgat, this, this);
 
-		*this = Forgat*(*this);
+	}
 
+	void moveTo(double x, double y) {
+		Matrix<T> Eltolas(3, 3);
+		Eltolas << 1 << 0 << x;
+		Eltolas << 0 << 1 << y;
+		Eltolas << 0 << 0 << 1;
+		MatrixMul(&Eltolas, this, this);
 	}
 
 protected:

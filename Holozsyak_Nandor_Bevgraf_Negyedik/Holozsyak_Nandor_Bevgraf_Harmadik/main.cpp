@@ -6,6 +6,7 @@
 #include <vector>
 #include <thread>
 #include <chrono>
+
 /*======================================*/
 
 /**
@@ -22,6 +23,27 @@ typedef struct { GLdouble x, y, z, w; } VECTOR4;
 * 4x4 mátrix, sorfolytonosan tárolva
 */
 typedef GLdouble MATRIX4[4][4];
+
+
+
+/**
+* egy laphoz tartozó csúcsok indexei
+*/
+typedef struct { GLint v[4]; VECTOR3 faceCenter; } FACE;
+
+/**
+* visszadja a (v0,v1,v2,v3) indexekhez tartozó lapot
+*/
+FACE initFace(GLuint v0, GLuint v1, GLuint v2, GLuint v3, VECTOR3 center) {
+	FACE f;
+	f.v[0] = v0;
+	f.v[1] = v1;
+	f.v[2] = v2;
+	f.v[3] = v3;
+	f.faceCenter = center;
+	return f;
+}
+
 
 /*======================================*/
 
@@ -184,9 +206,8 @@ void mulMatrices(MATRIX4 A, MATRIX4 B, MATRIX4 C) {
 */
 GLdouble winWidth = 800.0f, winHeight = 600.0f;
 
-
+double PI = 3.14159265358979323846;
 MATRIX4 view;
-double **cam;
 
 /**
 * merõleges és centrális vetítések mátrixai
@@ -204,7 +225,7 @@ MATRIX4 Wc;
 MATRIX4 Tcx, Tcy, Tcz, TC[4];
 
 /**
-* segédmátrix
+* segédmátrixok
 */
 MATRIX4 Tmp, TempR, TempE;
 
@@ -223,19 +244,20 @@ MATRIX4 S;
 
 MATRIX4 Sik;
 
-GLdouble alpha = 3.14f/2, deltaAlpha = 3.14f / 180.0f;
+GLdouble alpha = 3.14f / 2, deltaAlpha = 3.14f / 180.0f;
 
 /**
 * nézet koordinátái
 */
 //GLdouble cX = (winWidth - winHeight) / 2.0f + 150, cY = 0, cW = winHeight / 2, cH = winHeight / 2 - 100;
 GLdouble cX = 100, cY = 0, cW = 600, cH = 500;
+
 /**
 * centrális vetítés középpontjának Z koordinátája
 */
 GLdouble center = 6.0f;
 
-
+//itt inicializálódik az eltolási mátrix
 void initEltolasMatrix(double x, double y, double z) {
 	initIdentityMatrix(E);
 
@@ -250,6 +272,7 @@ void initEltolasMatrix(double x, double y, double z) {
 	E[1][3] = y;
 	E[2][3] = z;
 }
+//itt inicializálódik a skálázsi mátrix
 void initSkalazasMatrix(double x, double y, double z) {
 	//initIdentityMatrix(S);
 	S[0][0] = x;
@@ -324,7 +347,7 @@ void initTransformations()
 	initRotationMatrixes(deltaA);
 	initEltolasMatrix(0, 0, 0);
 
-	// egyik tórusz - X tengely
+	// tórusz - X tengely körüli forgással
 	mulMatrices(E, Rx, TempR);
 	mulMatrices(view, TempR, TempE);
 	mulMatrices(Vc, TempE, Tmp);
@@ -355,32 +378,13 @@ void init()
 	initTransformations();
 }
 
-double PI = 3.14159265358979323846;
 
-/**
-* egy laphoz tartozó csúcsok indexei
-*/
-typedef struct { GLint v[4]; VECTOR3 normal; } FACE;
-
-/**
-* visszadja a (v0,v1,v2,v3) indexekhez tartozó lapot
-*/
-FACE initFace(GLuint v0, GLuint v1, GLuint v2, GLuint v3, VECTOR3 norm) {
-	FACE f;
-	f.v[0] = v0;
-	f.v[1] = v1;
-	f.v[2] = v2;
-	f.v[3] = v3;
-	f.normal = norm;
-	return f;
-}
-
-
+//itt fogjuk rendezni a lapokat a középpontjának a z koordinátái szerint
 int comparePointsbyAtlag(const void *a, const void *b) {
 
-	if (((*(FACE*)a).normal.z < ((*(FACE*)b).normal.z))) return -1;
-	if (((*(FACE*)a).normal.z == ((*(FACE*)b).normal.z))) return  0;
-	if (((*(FACE*)a).normal.z > ((*(FACE*)b).normal.z))) return  1;
+	if (((*(FACE*)a).faceCenter.z < ((*(FACE*)b).faceCenter.z))) return -1;
+	if (((*(FACE*)a).faceCenter.z == ((*(FACE*)b).faceCenter.z))) return  0;
+	if (((*(FACE*)a).faceCenter.z > ((*(FACE*)b).faceCenter.z))) return  1;
 
 
 }
@@ -481,11 +485,11 @@ std::vector<VECTOR3> transformedPontok;
 std::vector<FACE> faceTorusz;
 void drawToruszWithPlanes(VECTOR3 color, MATRIX4 T, MATRIX4 CAM) {
 
-	double B[4][1];
+	double B[4];
 	double theta, fi;
-	double c = 1.5, a = 1;
-	VECTOR4 ph, pt;
-	VECTOR3 pih;
+	double c = 4, a = 2;
+	VECTOR4 beforeVector, afterVector;
+	VECTOR3 drawVector;
 	int i = 0, j = 0;
 	glColor3f(color.x, color.y, color.z);
 
@@ -493,138 +497,161 @@ void drawToruszWithPlanes(VECTOR3 color, MATRIX4 T, MATRIX4 CAM) {
 	//2PI / (Pi/12) = 24;
 	//2PI / (Pi/8) = 16;
 	//2PI / (Pi/4) = 8;
-	double delta = PI / 14;
+	double delta = PI / 6;
 
 	int dI = (int)((2 * PI) / (delta)), dJ = (int)((2 * PI) / (delta));
-	//std::cout <<(double) (2 * PI) / (delta) <<"~" << dI << std::endl;
-	int K = 1;
+	//std::cout << (double)(2 * PI) / (delta) << "~" << dI << std::endl;
 
-	for (fi = 0; fi < 2 * PI + delta; fi += delta) {
-		for (theta = 0; theta < 2 * PI; theta += delta) {
-			B[0][0] = (c + a*cos(theta))*cos(fi);
-			B[1][0] = a*sin(theta);
-			B[2][0] = (c + a*cos(theta))*sin(fi);
-			B[3][0] = 1.0;
-			// homogén koordinátás alakra hozzuk a csúcsot
-			ph = initVector4(B[0][0], B[1][0], B[2][0], 1.0);
-			//elõbb a pontok4d-be belerakjuk azokat a pontokat amiket elõbb az új koordináta rendszerben megkapunk hogy majd ezek alapján tudjunk számolgatni, döntéseket hozni hogy látható-e vagy sem
-			pt = mulMatrixVector(CAM, ph);
-			pontok4d.push_back(pt);
-			//itt meg vesszük a már vetített pontunkat és azokat is berakjuk
-			pt = mulMatrixVector(T, ph);
-			pih = initVector3(pt.x / pt.w, pt.y / pt.w, pt.z / pt.w);
-			pontok.push_back(pih);
-		}
-
+	for (fi = 0; fi < 2 * PI; fi += delta) {
+		
+			for (theta = 0; theta < 2 * PI; theta += delta) {
+				B[0] = (c + a*cos(theta))*cos(fi);
+				B[1] = a*sin(theta);
+				B[2] = (c + a*cos(theta))*sin(fi);
+				B[3] = 1.0;
+				// homogén koordinátás alakra hozzuk a csúcsot
+				beforeVector = initVector4(B[0], B[1], B[2], B[3]);
+				//elõbb a pontok4d-be belerakjuk azokat a pontokat amiket elõbb az új koordináta rendszerben megkapunk hogy majd ezek alapján tudjunk számolgatni, döntéseket hozni hogy látható-e vagy sem
+				afterVector = mulMatrixVector(CAM, beforeVector);
+				pontok4d.push_back(afterVector);
+				//itt meg vesszük a már vetített pontunkat és azokat is berakjuk
+				afterVector = mulMatrixVector(T, beforeVector);
+				drawVector = initVector3(afterVector.x / afterVector.w, afterVector.y / afterVector.w, afterVector.z / afterVector.w);
+				pontok.push_back(drawVector);
+			}		
 	}
 
 
 	GLdouble x, y, z;
-
+	//Itt történik a lapok elkészítése, az elv a következõ, a pontokat legyártottuk úgy mint szélességi körök csatlakozási pontjai és ezeket kell összepakolni lapokként
+	//egy példa az elsõ lapra, vagyi annak indexeire: 0,12,13,1 ha 12 pont készül egy belsõ ciklus futása alatt, de bestéljük róla dI ként
+	//vannak különbözõ esetek amik le vannak ellenõrizve például minden lapnak dI poligonhalmaznak az utolsó lapját hozzá kell kötni az elsõhöz
+	//illetve az utolsó dI poligonhalmazt hozzá kell kötni az elsõ dI poligonhalmazhoz
+	//a következõ dupla for ciklus ezeket játsza el
+	//a sorrend mindig, bal alsó, bal felsõ, jobb felsõ, és jobb alsó óramutató járásával megyezõ irányú
 	for (i = 0; i < dI; i++) {
 		for (int j = 0; j < dJ; j++) {
+
 			FACE f;
-			if (j == dJ - 1) {
-				x =
-					(pontok4d[i * dI + j].x +
+
+			//ha már az utolsó laphalmaznál járunk
+			if (i == dI - 1) {
+				if (j == dJ - 1) {
+					x = (pontok4d[i * dI + j].x +
+						pontok4d[j%dI].x +
+						pontok4d[j%dI + 1 - dI].x +
+						pontok4d[i * dI + j + 1-dI].x) / 4;
+
+					y = (pontok4d[i * dI + j ].y +
+						pontok4d[j%dI].y +
+						pontok4d[j%dI + 1 - dI].y +
+						pontok4d[i * dI + j + 1 - dI].y) / 4;
+
+					z = (pontok4d[i * dI + j].z +
+						pontok4d[j%dI].z +
+						pontok4d[j%dI + 1 - dI].z +
+						pontok4d[i * dI + j + 1 - dI].z) / 4;
+					f = initFace((GLint)(i * dI + j), (GLint)(j%dI), (GLint)(j%dI + 1-dI), (GLint)(i * dI + j + 1-dI), initVector3(x, y, z));
+				}
+				else {
+					x = (pontok4d[i * dI + j].x +
+						pontok4d[j%dI].x +
+						pontok4d[j%dI + 1].x +
+						pontok4d[i * dI + j + 1].x) / 4;
+					y = (pontok4d[i * dI + j].y +
+						pontok4d[j%dI].y +
+						pontok4d[j%dI + 1].y +
+						pontok4d[i * dI + j + 1].y) / 4;
+					z = (pontok4d[i * dI + j].z +
+						pontok4d[j%dI].z +
+						pontok4d[j%dI + 1].z +
+						pontok4d[i * dI + j + 1].z) / 4;
+					f = initFace((GLint)(i * dI + j), (GLint)(j%dI), (GLint)(j%dI + 1), (GLint)(i * dI + j + 1), initVector3(x, y, z));
+				}
+
+			}
+			//ha még nem
+			else {
+				//ha a laphalmaz utolsó lapjánál járunk kössük be az elsõhöz.
+				if (j == dJ - 1) {
+					x = (pontok4d[i * dI + j].x +
 						pontok4d[i * dI + j + dJ].x +
 						pontok4d[i * dI + j + dJ + 1 - dI].x +
 						pontok4d[i * dI + j + 1 - dI].x) / 4;
-				y =
-					(pontok4d[i * dI + j].y +
+					y = (pontok4d[i * dI + j].y +
 						pontok4d[i * dI + j + dJ].y +
 						pontok4d[i * dI + j + dJ + 1 - dI].y +
 						pontok4d[i * dI + j + 1 - dI].y) / 4;
-				z =
-					(pontok4d[i * dI + j].z +
+					z = (pontok4d[i * dI + j].z +
 						pontok4d[i * dI + j + dJ].z +
 						pontok4d[i * dI + j + dJ + 1 - dI].z +
 						pontok4d[i * dI + j + 1 - dI].z) / 4;
 
-				f = initFace((GLuint)(i * dI + j), (GLuint)(i * dI + j + dJ), (GLuint)(i * dI + j + dJ + 1 - dI), (GLuint)(i * dI + j + 1 - dI), initVector3(x, y, z));
-			}
-			else {
-				x =
-					(pontok4d[i * dI + j].x +
+					f = initFace((GLuint)(i * dI + j), (GLuint)(i * dI + j + dJ), (GLuint)(i * dI + j + dJ + 1 - dI), (GLuint)(i * dI + j + 1 - dI), initVector3(x, y, z));
+				}
+				else {
+					x = (pontok4d[i * dI + j].x +
 						pontok4d[i * dI + j + dJ].x +
 						pontok4d[i * dI + j + dJ + 1].x +
 						pontok4d[i * dI + j + 1].x) / 4;
-				y =
-					(pontok4d[i * dI + j].y +
+					y = (pontok4d[i * dI + j].y +
 						pontok4d[i * dI + j + dJ].y +
 						pontok4d[i * dI + j + dJ + 1].y +
 						pontok4d[i * dI + j + 1].y) / 4;
-				z =
-					(pontok4d[i * dI + j].z +
+					z = (pontok4d[i * dI + j].z +
 						pontok4d[i * dI + j + dJ].z +
 						pontok4d[i * dI + j + dJ + 1].z +
 						pontok4d[i * dI + j + 1].z) / 4;
-				f = initFace((GLint)(i * dI + j), (GLint)(i * dI + j + dJ), (GLint)(i * dI + j + dJ + 1), (GLint)(i * dI + j + 1), initVector3(x, y, z));
+					//bal alsó, bal felsõ, jobb felsõ, és jobb alsó
+					f = initFace((GLint)(i * dI + j), (GLint)(i * dI + j + dJ), (GLint)(i * dI + j + dJ + 1), (GLint)(i * dI + j + 1), initVector3(x, y, z));
+				}
 			}
-
 			faceTorusz.push_back(f);
-			//std::cout << "actual F:" << f.v[0] << " - " << f.v[1] << " - " << f.v[2] << " - " << f.v[3] << " x:" << f.normal.x << " y:" << f.normal.y << " z:" << f.normal.z << std::endl;
-			//std::cout << "actual F:" << " x:" << f.normal.x << " y:" << f.normal.y << " z:" << f.normal.z << std::endl;
+			//std::cout << "actual F:" << f.v[0] << " - " << f.v[1] << " - " << f.v[2] << " - " << f.v[3] << " x:" << f.faceCenter.x << " y:" << f.faceCenter.y << " z:" << f.faceCenter.z << std::endl;
 		}
 	}
 
 	//itt rendezzük a lapokat tartalmazó vektorunkat
 	qsort(&faceTorusz[0], faceTorusz.size(), sizeof(FACE), comparePointsbyAtlag);
-
+	
 	for (int i = 0; i < faceTorusz.size(); i++) {
-		//std::cout << "after sort F:" << " x:" << faceTorusz[i].normal.x << " y:" << faceTorusz[i].normal.y << " z:" << faceTorusz[i].normal.z << std::endl;
-		// meghatározzuk a lap megfelel?i éleit
+		//lap éleinek meghatározása és ezek után ezeknek a vektoriális szorzata adja a lap testbõl kifelé mutató normálvektorát
 		VECTOR3 edges[2] =
 		{
-			/*	vecSub(convertToInhomogen(pontok4d[faceTorusz[i].v[0]]),
-				convertToInhomogen(pontok4d[faceTorusz[i].v[1]])),
-
-				vecSub(convertToInhomogen(pontok4d[faceTorusz[i].v[0]]),
-				convertToInhomogen(pontok4d[faceTorusz[i].v[2]]))*/
-
-				vecSub(faceTorusz[i].normal,
+				vecSub(faceTorusz[i].faceCenter,
 				convertToInhomogen(pontok4d[faceTorusz[i].v[0]])),
-
-				vecSub(faceTorusz[i].normal,
+				vecSub(faceTorusz[i].faceCenter,
 					convertToInhomogen(pontok4d[faceTorusz[i].v[1]]))
 		};
 
-		// kiszámítjuk ezekb?l a a lap normálvektorát
-		VECTOR3 normal = normalize(crossProduct(edges[1], edges[0]));
-		// camerába mutató vektort
+		// itt jön a normálvektor számítás
+		VECTOR3 normalVector = normalize(crossProduct(edges[1], edges[0]));
+		// kamerába mutató vektor, amit normalizálnunk kell
 		VECTOR3 toCamera;
-		//toCamera = normalize(vecSub(pontok[faceTorusz[i].v[0]], initVector3(0.0f, 0.0f, center)));
-		//toCamera = normalize(vecSub(convertToInhomogen(pontok4d[faceTorusz[i].v[0]]), initVector3(0.0f, 0.0f, center)));
-		toCamera = normalize(vecSub(faceTorusz[i].normal, initVector3(0.0f, 0.0f, center)));
-		//toCamera.x = -toCamera.x;
-		//toCamera.y = -toCamera.y;
-		//toCamera.z = -toCamera.z;
+		toCamera = normalize(vecSub(faceTorusz[i].faceCenter, initVector3(0.0f, 0.0f, center)));
 		// láthatóság eldöntése skaláris szorzat alapján
-		if (dotProduct(normal, toCamera) > 0) {
-
-			//glColor3f((double)i / faceTorusz.size(), (double)i / faceTorusz.size(), 0);
+		if (dotProduct(normalVector, toCamera) > 0) {
+			//std::cout << i << " lap kirajzolódik" << std::endl;
 			glColor3f(0, 0, 0);
 			glLineWidth(2.0);
 
 			glBegin(GL_LINES);
+			//elsõ vonal
 			glVertex2d(pontok[faceTorusz[i].v[0]].x, pontok[faceTorusz[i].v[0]].y);
 			glVertex2d(pontok[faceTorusz[i].v[1]].x, pontok[faceTorusz[i].v[1]].y);
-			glEnd();
-			glBegin(GL_LINES);
+			//második
 			glVertex2d(pontok[faceTorusz[i].v[1]].x, pontok[faceTorusz[i].v[1]].y);
 			glVertex2d(pontok[faceTorusz[i].v[2]].x, pontok[faceTorusz[i].v[2]].y);
-			glEnd();
-			glBegin(GL_LINES);
+			//harmadik
 			glVertex2d(pontok[faceTorusz[i].v[2]].x, pontok[faceTorusz[i].v[2]].y);
 			glVertex2d(pontok[faceTorusz[i].v[3]].x, pontok[faceTorusz[i].v[3]].y);
-			glEnd();
-			glBegin(GL_LINES);
+			//negyedik
 			glVertex2d(pontok[faceTorusz[i].v[3]].x, pontok[faceTorusz[i].v[3]].y);
 			glVertex2d(pontok[faceTorusz[i].v[0]].x, pontok[faceTorusz[i].v[0]].y);
 			glEnd();
 
-			//glColor3f((double)i / faceTorusz.size(), 0, 0);
-			glColor3f((dotProduct(normal, toCamera) + 1) / 2, (dotProduct(normal, toCamera) + 1) / 2, 0);
+			//glColor3f((double)i / faceTorusz.size(), 0.05, 0);
+			glColor3f((dotProduct(normalVector, toCamera) + 1) / 2, (dotProduct(normalVector, toCamera) + 1) / 2, (dotProduct(normalVector, toCamera) + 1) / 1);
 			//glColor3f(color.x, color.y, color.z);
 			glBegin(GL_POLYGON);
 			glVertex2d(pontok[faceTorusz[i].v[0]].x, pontok[faceTorusz[i].v[0]].y);
@@ -636,6 +663,7 @@ void drawToruszWithPlanes(VECTOR3 color, MATRIX4 T, MATRIX4 CAM) {
 		}
 
 	}
+
 	pontok4d.clear();
 	pontok.clear();
 	faceTorusz.clear();
@@ -643,70 +671,12 @@ void drawToruszWithPlanes(VECTOR3 color, MATRIX4 T, MATRIX4 CAM) {
 
 }
 
-void drawTorusz(VECTOR3 color, MATRIX4 T) {
-
-	double B[4][1];
-	float theta, fi;
-	float c = 8, a = 1;
-	VECTOR4 ph, pt;
-	VECTOR3 pih;
-	glLineWidth(1.0);
-	glColor3f(color.x, color.y, color.z);
-	for (theta = 0; theta <= 2 * PI + 0.00001; theta += PI / 4) {
-		glBegin(GL_LINE_LOOP);
-		for (fi = 0; fi <= 2 * PI + 0.00001; fi += PI / 6) {
-			B[0][0] = (c + a*cos(theta))*cos(fi);
-			B[1][0] = a*sin(theta);
-			B[2][0] = (c + a*cos(theta))*sin(fi);
-			B[3][0] = 1.0;
-			// homogén koordinátás alakra hozzuk a csúcsot
-			ph = initVector4(B[0][0], B[1][0], B[2][0], 1.0);
-
-			// alkalmazzuk a transzformációt
-			pt = mulMatrixVector(T, ph);
-
-			// visszatérünk inhomogén alakra
-			pih = initVector3(pt.x / pt.w, pt.y / pt.w, pt.z / pt.w);
-
-			// kirajzoljuk a csúcsot
-			glVertex2f(pih.x, pih.y);
-		}
-		glEnd();
-	}
-
-
-
-	for (fi = 0; fi <= 2 * PI + 0.000001; fi += PI / 6) {
-		glBegin(GL_LINE_LOOP);
-		for (theta = 0; theta <= 2 * PI + 0.0000001; theta += PI / 6) {
-			B[0][0] = (c + a*cos(theta))*cos(fi);
-			B[1][0] = a*sin(theta);
-			B[2][0] = (c + a*cos(theta))*sin(fi);
-			B[3][0] = 1.0;
-			// homogén koordinátás alakra hozzuk a csúcsot
-			ph = initVector4(B[0][0], B[1][0], B[2][0], 1.0);
-
-			// alkalmazzuk a transzformációt
-			pt = mulMatrixVector(T, ph);
-
-			// visszatérünk inhomogén alakra
-			pih = initVector3(pt.x / pt.w, pt.y / pt.w, pt.z / pt.w);
-
-			// kirajzoljuk a csúcsot
-			glVertex2f(pih.x, pih.y);
-
-		}
-		glEnd();
-	}
-}
-
 void draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 	//drawGrid(initVector3(0, 0, 0), Sik);
 	drawToruszWithPlanes(initVector3(0.0f, 1.0f, 0.0f), Tcx, TempE);
-	//drawTorusz(initVector3(1.0f, 0.0f, 0.0f), Tcx);
-	deltaA += 0.002;
+	//deltaA += 0.02;
 	initTransformations();
 	glFlush();
 }
@@ -791,6 +761,7 @@ int main(int argc, char ** argv)
 
 	init();
 	draw();
+
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
 	{
